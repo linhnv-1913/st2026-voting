@@ -27,10 +27,11 @@ service cloud.firestore {
 
     // Config Rules
     function isValidConfig(data) {
-      return data.keys().hasAll(['question', 'options', 'isActive']) &&
+      return data.keys().hasAll(['question', 'options', 'isActive', 'endTime']) &&
              data.question is string && data.question.size() <= 200 &&
              data.options is list && data.options.size() <= 4 &&
-             data.isActive is bool;
+             data.isActive is bool &&
+             (data.endTime == null || data.endTime is number);
     }
 
     match /config/{configId} {
@@ -41,21 +42,33 @@ service cloud.firestore {
     }
 
     // Vote Rules
+    function isPollOpen() {
+      let poll = get(/databases/$(database)/documents/config/main).data;
+      return poll.isActive == true &&
+             (poll.endTime == null || request.time.toMillis() <= poll.endTime);
+    }
+
     function isValidVote(data) {
-      let hasOptionId = data.keys().hasAny(['optionId']) && data.optionId is string && data.optionId.size() <= 50;
-      let hasOptionIds = data.keys().hasAny(['optionIds']) && data.optionIds is list && data.optionIds.size() <= 4;
-      return (hasOptionId || hasOptionIds) &&
-             data.keys().hasAll(['userId', 'timestamp']) &&
-             data.userId is string && data.userId.size() <= 128 &&
+      return data.keys().hasOnly(['optionIds', 'userId', 'timestamp']) &&
+             data.keys().hasAll(['optionIds', 'userId', 'timestamp']) &&
+             data.optionIds is list && data.optionIds.size() == 3 &&
+             data.optionIds[0] is string && data.optionIds[0].size() <= 50 &&
+             data.optionIds[1] is string && data.optionIds[1].size() <= 50 &&
+             data.optionIds[2] is string && data.optionIds[2].size() <= 50 &&
+             data.optionIds[0] != data.optionIds[1] &&
+             data.optionIds[0] != data.optionIds[2] &&
+             data.optionIds[1] != data.optionIds[2] &&
+             data.userId == request.auth.uid &&
              data.timestamp is number;
     }
 
     match /votes/{voteId} {
-      allow get: if true;
+      allow get: if isAdmin() || (isSignedIn() && voteId == 'vote_' + request.auth.uid);
       allow list: if isAdmin();
-      // Anyone can vote. We enforce they own their vote via userId in document id.
-      allow create: if isValidId(voteId) && isValidVote(incoming()) && voteId == 'vote_' + incoming().userId;
-      allow update: if isValidVote(incoming()) && incoming().userId == existing().userId;
+      // A signed-in account gets one immutable vote document while the poll is open.
+      allow create: if isSignedIn() && isValidId(voteId) && isValidVote(incoming()) &&
+                    voteId == 'vote_' + request.auth.uid && isPollOpen();
+      allow update: if false;
       allow delete: if isAdmin();
     }
 

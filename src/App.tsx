@@ -6,14 +6,16 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { UserVote } from './components/UserVote';
 import { AdminPanel } from './components/AdminPanel';
+import { ResultsDisplay } from './components/ResultsDisplay';
 
 export default function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col overflow-x-hidden">
+    <Router basename={import.meta.env.BASE_URL}>
+      <div className="min-h-screen text-slate-900 font-sans overflow-x-hidden">
         <Routes>
           <Route path="/" element={<UserVote />} />
           <Route path="/admin/*" element={<AdminPanel />} />
+          <Route path="/results" element={<ResultsDisplay />} />
         </Routes>
       </div>
     </Router>

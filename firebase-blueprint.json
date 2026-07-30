@@ -17,11 +17,11 @@
       "description": "User vote",
       "type": "object",
       "properties": {
-        "optionId": { "type": "string", "maxLength": 50 },
+        "optionIds": { "type": "array", "minItems": 3, "maxItems": 3 },
         "userId": { "type": "string", "maxLength": 128 },
         "timestamp": { "type": "integer" }
       },
-      "required": ["optionId", "userId", "timestamp"]
+      "required": ["optionIds", "userId", "timestamp"]
     },
     "Admin": {
       "title": "Admin",

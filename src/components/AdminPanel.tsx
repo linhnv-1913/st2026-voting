@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, onSnapshot, collection, query } from 'firebase/firestore';
+import { useState, useEffect, type FormEvent } from 'react';
+import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { Link } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { Config, Vote, Option } from '../types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Loader2, Settings, Plus, Trash2, LogOut, Play, Square } from 'lucide-react';
+import { normalizeHubOptions } from '../hubOptions';
+import { ExternalLink, Loader2, Plus, Trash2, LogOut } from 'lucide-react';
 import { motion } from 'motion/react';
+import { FestivalBrand, MatsuriShell } from './MatsuriShell';
 
 export function AdminPanel() {
   const [user, setUser] = useState(auth.currentUser);
@@ -33,7 +35,7 @@ export function AdminPanel() {
     return unsub;
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoginError('');
     
@@ -84,55 +86,84 @@ export function AdminPanel() {
   };
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin w-8 h-8 text-slate-400" /></div>;
+    return (
+      <MatsuriShell>
+        <section className="festival-card" aria-label="Đang tải trang quản trị">
+          <FestivalBrand admin />
+          <div className="festival-loading">
+            <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
+            <span className="sr-only">Đang tải trang quản trị</span>
+          </div>
+        </section>
+      </MatsuriShell>
+    );
   }
 
   if (!user) {
     return (
-      <div className="flex h-screen items-center justify-center p-6 bg-gradient-to-b from-sky-400 via-blue-500 to-blue-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'repeating-conic-gradient(from 0deg at 50% 100%, transparent 0deg 5deg, white 5deg 10deg)' }}></div>
-        <div className="bg-white/95 backdrop-blur-md p-8 rounded-3xl shadow-2xl border-4 border-red-600 max-w-sm w-full text-center relative z-10">
-          <h2 className="text-3xl font-black mb-6 text-red-700 uppercase tracking-wide">Matsuri Admin</h2>
-          <form onSubmit={handleLogin} className="space-y-4">
-            {loginError && <div className="text-red-500 text-sm font-bold bg-red-50 p-2 rounded-lg border border-red-200">{loginError}</div>}
-            <input 
-              type="text" 
-              value={usernameInput}
-              onChange={e => setUsernameInput(e.target.value)}
-              placeholder="Username" 
-              className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-900 font-medium outline-none focus:border-red-500 focus:bg-white transition-colors"
-            />
-            <input 
-              type="password" 
-              value={passwordInput}
-              onChange={e => setPasswordInput(e.target.value)}
-              placeholder="Password" 
-              className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-900 font-medium outline-none focus:border-red-500 focus:bg-white transition-colors"
-            />
-            <button type="submit" className="w-full bg-gradient-to-r from-amber-400 to-amber-500 text-red-950 font-black py-4 rounded-xl hover:from-amber-300 hover:to-amber-400 transition-colors shadow-lg shadow-amber-500/30 uppercase tracking-wide mt-2">
+      <MatsuriShell>
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="festival-card"
+          aria-labelledby="admin-login-heading"
+        >
+          <FestivalBrand admin />
+          <span className="festival-eyebrow">Khu vực quản trị</span>
+          <h1 id="admin-login-heading" className="festival-title">Điều hành bình chọn</h1>
+          <p className="festival-copy">Đăng nhập để thiết lập câu hỏi, mở bình chọn và theo dõi kết quả theo thời gian thực.</p>
+          <form onSubmit={handleLogin} className="festival-form">
+            {loginError && <p className="festival-alert" role="alert">{loginError}</p>}
+            <label className="festival-field">
+              <span className="festival-field__label">Tài khoản</span>
+              <input
+                type="text"
+                required
+                autoComplete="username"
+                value={usernameInput}
+                onChange={e => setUsernameInput(e.target.value)}
+                placeholder="Nhập tài khoản quản trị"
+                className="festival-input"
+              />
+            </label>
+            <label className="festival-field">
+              <span className="festival-field__label">Mật khẩu</span>
+              <input
+                type="password"
+                required
+                autoComplete="current-password"
+                value={passwordInput}
+                onChange={e => setPasswordInput(e.target.value)}
+                placeholder="Nhập mật khẩu"
+                className="festival-input"
+              />
+            </label>
+            <button type="submit" className="festival-primary">
               Đăng nhập
             </button>
           </form>
-        </div>
-      </div>
+        </motion.section>
+      </MatsuriShell>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="flex h-screen items-center justify-center p-6 bg-gradient-to-b from-sky-400 via-blue-500 to-blue-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'repeating-conic-gradient(from 0deg at 50% 100%, transparent 0deg 5deg, white 5deg 10deg)' }}></div>
-        <div className="bg-white/95 backdrop-blur-md p-8 rounded-3xl shadow-2xl border-4 border-red-600 max-w-sm w-full text-center relative z-10">
-          <h2 className="text-2xl font-black mb-4 text-red-700">Not Authorized</h2>
-          <p className="text-slate-600 text-sm mb-6 font-medium">You are signed in as {user.email}, but you are not an admin.</p>
-          <button onClick={handleClaimAdmin} className="w-full bg-red-600 text-white font-bold py-3 rounded-xl shadow-md shadow-red-600/30 hover:bg-red-700 transition-colors mb-3 uppercase tracking-wide">
-            Claim Admin Rights
+      <MatsuriShell>
+        <section className="festival-card" aria-labelledby="no-access-heading">
+          <FestivalBrand admin />
+          <span className="festival-eyebrow">Quyền truy cập</span>
+          <h1 id="no-access-heading" className="festival-title">Tài khoản chưa có quyền</h1>
+          <p className="festival-copy">Bạn đang đăng nhập bằng {user.email}, nhưng tài khoản này chưa được cấp quyền quản trị.</p>
+          <hr className="festival-divider" />
+          <button type="button" onClick={handleClaimAdmin} className="festival-primary mb-3 w-full">
+            Yêu cầu quyền quản trị
           </button>
-          <button onClick={() => signOut(auth)} className="w-full border-2 border-slate-300 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-50 transition-colors uppercase tracking-wide">
-            Sign Out
+          <button type="button" onClick={() => signOut(auth)} className="festival-secondary w-full">
+            Đăng xuất
           </button>
-        </div>
-      </div>
+        </section>
+      </MatsuriShell>
     );
   }
 
@@ -147,15 +178,25 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
   // Form state
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<Option[]>([{ id: 'opt_1', text: '' }, { id: 'opt_2', text: '' }]);
+  const [endTimeInput, setEndTimeInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isResettingVotes, setIsResettingVotes] = useState(false);
+
+  const formatDateTimeLocal = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const timezoneOffset = date.getTimezoneOffset() * 60_000;
+    return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
+  };
 
   useEffect(() => {
     const unsubConfig = onSnapshot(doc(db, 'config', 'main'), (snap) => {
       if (snap.exists()) {
-        const data = snap.data() as Config;
+        const sourceData = snap.data() as Config;
+        const data = { ...sourceData, options: normalizeHubOptions(sourceData.options || []) } as Config;
         setConfig(data);
         setQuestion(data.question);
         setOptions(data.options);
+        setEndTimeInput(data.endTime ? formatDateTimeLocal(data.endTime) : '');
       }
       setLoading(false);
     });
@@ -187,11 +228,21 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
         return;
       }
 
+      const endTime = endTimeInput ? new Date(endTimeInput).getTime() : null;
+      if (endTimeInput && Number.isNaN(endTime)) {
+        alert('Thời điểm đóng poll không hợp lệ.');
+        return;
+      }
+      if (isActive && endTime && endTime <= Date.now()) {
+        alert('Thời điểm đóng phải ở tương lai khi bắt đầu poll.');
+        return;
+      }
+
       await setDoc(doc(db, 'config', 'main'), {
         question: question || 'Untitled Poll',
         options: filteredOptions,
         isActive,
-        endTime: null
+        endTime
       });
     } catch (e) {
       console.error(e);
@@ -215,55 +266,91 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
     setOptions(options.filter(o => o.id !== id));
   };
 
-  if (loading) return <div className="flex p-12 items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
+  const handleResetVotes = async () => {
+    if (!window.confirm('Xóa toàn bộ phiếu hiện có? Thao tác này không thể hoàn tác.')) return;
+
+    setIsResettingVotes(true);
+    try {
+      const snapshot = await getDocs(collection(db, 'votes'));
+      for (let index = 0; index < snapshot.docs.length; index += 500) {
+        const batch = writeBatch(db);
+        snapshot.docs.slice(index, index + 500).forEach(vote => batch.delete(vote.ref));
+        await batch.commit();
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Không thể xóa phiếu. Vui lòng thử lại.');
+    } finally {
+      setIsResettingVotes(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="admin-shell flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-red-700" aria-label="Đang tải dữ liệu quản trị" />
+      </div>
+    );
+  }
 
   // Compute chart data
   const chartData = (config?.options || []).map(opt => {
-    const count = votes.filter(v => v.optionId === opt.id).length;
+    const count = votes.filter(v => v.optionIds?.includes(opt.id) || v.optionId === opt.id).length;
     return { name: opt.text, votes: count, id: opt.id };
   });
 
   const totalVotes = votes.length;
 
   return (
-    <div className="flex flex-col min-h-screen bg-blue-50 w-full relative">
-      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'repeating-conic-gradient(from 0deg at 50% 100%, transparent 0deg 5deg, #0b4b8a 5deg 10deg)' }}></div>
-      <header className="h-20 border-b-4 border-amber-400 bg-red-600 px-6 md:px-10 flex items-center justify-between shrink-0 relative z-10 shadow-md">
+    <div className="admin-shell">
+      <header className="admin-topbar">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-wide uppercase">C3 Matsuri Admin</h1>
-          <p className="text-xs text-red-100 font-medium">Real-time updates • {totalVotes} votes recorded</p>
+          <FestivalBrand admin />
+          <p className="admin-topbar__meta">Cập nhật trực tiếp • {totalVotes} lượt bình chọn</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={onSignOut} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-red-900 bg-amber-400 hover:bg-amber-300 rounded-lg transition-colors shadow-sm">
-            <LogOut className="w-4 h-4" /> Sign Out
+        <div className="admin-topbar__actions">
+          <Link to="/results" target="_blank" rel="noreferrer" className="admin-results-link">
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            <span>Màn hình kết quả</span>
+          </Link>
+          <button type="button" onClick={onSignOut} className="admin-signout" aria-label="Đăng xuất">
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+            <span>Đăng xuất</span>
           </button>
         </div>
       </header>
 
-      <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <main className="admin-main">
+        <div className="admin-grid">
           {/* Settings Panel */}
-          <div className="bg-white p-8 rounded-3xl shadow-lg shadow-blue-900/5 border-2 border-slate-100 order-2 lg:order-1 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-bl-full -z-10 opacity-50"></div>
-            <h3 className="text-xl font-black mb-6 flex items-center gap-3 text-slate-900">
-              <span className="w-3 h-8 bg-red-600 rounded-full"></span>
-              Question & Settings
-            </h3>
+          <section className="admin-card">
+            <h2 className="admin-section-title">Câu hỏi & thiết lập</h2>
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase">Question</label>
+                <label className="text-xs font-bold text-slate-500 uppercase">Câu hỏi bình chọn</label>
                 <input
                   type="text"
                   value={question}
                   onChange={e => setQuestion(e.target.value)}
-                  placeholder="Enter your question here..."
-                  className="w-full p-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm font-medium outline-none focus:border-red-500 focus:bg-white transition-colors"
+                  placeholder="Nhập câu hỏi tại đây..."
+                  className="festival-input"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase">Options</label>
+                <label className="text-xs font-bold text-slate-500 uppercase">Tự đóng poll (tuỳ chọn)</label>
+                <input
+                  type="datetime-local"
+                  value={endTimeInput}
+                  onChange={event => setEndTimeInput(event.target.value)}
+                  className="festival-input"
+                />
+                <p className="text-xs text-slate-400">Để trống nếu muốn quản trị viên tự dừng poll.</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase">Các phương án</label>
                 <div className="space-y-3">
                   {options.map((opt, i) => (
                     <div key={opt.id} className="flex items-center gap-2">
@@ -271,8 +358,8 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
                         type="text"
                         value={opt.text}
                         onChange={e => updateOption(opt.id, e.target.value)}
-                        placeholder={`Option ${i + 1}`}
-                        className="flex-1 p-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm font-medium outline-none focus:border-red-500 focus:bg-white transition-colors"
+                        placeholder={`Phương án ${i + 1}`}
+                        className="festival-input min-w-0 flex-1"
                       />
                       <button
                         onClick={() => removeOption(opt.id)}
@@ -290,19 +377,26 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
                     onClick={addOption}
                     className="mt-3 flex items-center text-sm font-bold text-red-600 hover:text-red-800 transition-colors"
                   >
-                    <Plus className="w-4 h-4 mr-1" /> Add Option
+                    <Plus className="w-4 h-4 mr-1" /> Thêm phương án
                   </button>
                 )}
               </div>
 
-              <div className="pt-6 flex justify-end gap-3 border-t-2 border-slate-100">
+              <div className="admin-actions pt-6 border-t-2 border-slate-100">
+                <button
+                  onClick={handleResetVotes}
+                  disabled={isSaving || isResettingVotes || votes.length === 0}
+                  className="px-4 py-3 border-2 border-red-200 bg-red-50 text-red-700 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  {isResettingVotes ? 'Đang xóa...' : 'Xóa phiếu'}
+                </button>
                 {config?.isActive ? (
                   <button
                     onClick={() => handleSaveConfig(false)}
                     disabled={isSaving}
                     className="px-6 py-3 border-2 border-slate-200 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50 uppercase tracking-wide"
                   >
-                    Stop Poll
+                    Dừng poll
                   </button>
                 ) : (
                   <button
@@ -310,7 +404,7 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
                     disabled={isSaving}
                     className="px-6 py-3 bg-sky-500 text-white rounded-xl text-sm font-bold hover:bg-sky-600 transition-colors disabled:opacity-50 shadow-md shadow-sky-500/30 uppercase tracking-wide"
                   >
-                    Start Poll
+                    Bắt đầu poll
                   </button>
                 )}
                 
@@ -319,17 +413,16 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
                   disabled={isSaving}
                   className="px-8 py-3 bg-red-600 text-white rounded-xl text-sm font-black shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors disabled:opacity-50 uppercase tracking-wider"
                 >
-                  Save & Publish
+                  Lưu & công bố
                 </button>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* Results Panel */}
-          <div className="flex flex-col gap-6 order-1 lg:order-2">
-            <div className="bg-white p-8 rounded-3xl shadow-lg shadow-blue-900/5 border-2 border-slate-100 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-bl-full -z-10 opacity-50"></div>
-              <h3 className="text-sm font-black text-slate-400 mb-6 uppercase tracking-widest">Current Results</h3>
+          <div className="admin-results-stack">
+            <section className="admin-card">
+              <h2 className="admin-section-title">Kết quả hiện tại</h2>
               <div className="space-y-5">
                 {chartData.map((data, idx) => {
                   const percentage = totalVotes > 0 ? Math.round((data.votes / totalVotes) * 100) : 0;
@@ -338,7 +431,7 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
                     <div key={data.id}>
                       <div className="flex justify-between text-sm mb-2">
                         <span className="font-bold text-slate-700">{data.name || 'Untitled'}</span>
-                        <span className="font-black text-slate-900">{percentage}% <span className="text-slate-400 font-medium text-xs ml-1">({data.votes} votes)</span></span>
+                        <span className="font-black text-slate-900">{percentage}% <span className="text-slate-400 font-medium text-xs ml-1">({data.votes} lượt)</span></span>
                       </div>
                       <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                         <motion.div 
@@ -352,17 +445,17 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
                   );
                 })}
               </div>
-            </div>
+            </section>
 
-            <div className="bg-white p-8 rounded-3xl shadow-lg shadow-blue-900/5 border-2 border-slate-100 flex flex-col justify-center items-center text-center relative overflow-hidden">
-              <div className="absolute -left-4 -bottom-4 w-24 h-24 bg-amber-50 rounded-full -z-10 opacity-50"></div>
-              <div className="absolute -right-4 -top-4 w-16 h-16 bg-red-50 rounded-full -z-10 opacity-50"></div>
-              <div className="text-5xl font-black text-slate-900 tracking-tight">{totalVotes}</div>
-              <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-2">Total Votes</div>
+            <section className="admin-card admin-stat">
+              <div>
+                <div className="admin-stat__number">{totalVotes}</div>
+                <div className="admin-stat__label">Tổng lượt bình chọn</div>
               <div className={`mt-6 py-1.5 px-4 text-xs font-black rounded-full uppercase tracking-widest shadow-sm ${config?.isActive ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                {config?.isActive ? '● POLL IS LIVE' : 'POLL IS CLOSED'}
+                  {config?.isActive ? '● Poll đang mở' : 'Poll đã đóng'}
+                </div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
       </main>

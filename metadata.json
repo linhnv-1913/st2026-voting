@@ -1,0 +1,6 @@
+{
+  "name": "Live Poll App",
+  "description": "A real-time polling application with voting for users and a dashboard for admins.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

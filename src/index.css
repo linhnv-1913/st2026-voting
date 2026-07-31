@@ -485,14 +485,14 @@ input:focus-visible {
   align-items: center;
   gap: 7px;
   padding: 6px 9px;
-  color: #9e1420;
+  color: #146b3a;
   font-size: 0.62rem;
   font-weight: 950;
   letter-spacing: 0.11em;
   text-transform: uppercase;
-  border: 1px solid #f2b7bc;
+  border: 1px solid #b8e1c8;
   border-radius: 999px;
-  background: #fff1f1;
+  background: #ebf9f0;
 }
 
 .festival-status::before {
@@ -500,8 +500,8 @@ input:focus-visible {
   height: 7px;
   content: "";
   border-radius: 50%;
-  background: #e0202a;
-  box-shadow: 0 0 0 4px rgba(224, 32, 42, 0.12);
+  background: #27a85c;
+  box-shadow: 0 0 0 4px rgba(39, 168, 92, 0.12);
 }
 
 .festival-status--closed {
@@ -1150,20 +1150,49 @@ input:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.results-bar--red {
-  background: linear-gradient(180deg, #ff3b42, #e10f1d);
+.results-column--hub-1 .results-column__count,
+.results-column--hub-1 .results-column__label {
+  color: #c51e65;
 }
 
-.results-bar--sky {
-  background: linear-gradient(180deg, #36c8f2, #079fe0);
+.results-column--hub-2 .results-column__count,
+.results-column--hub-2 .results-column__label {
+  color: #d9680d;
 }
 
-.results-bar--gold {
-  background: linear-gradient(180deg, #ffdf68, #f0af13);
+.results-column--hub-4 .results-column__count,
+.results-column--hub-4 .results-column__label {
+  color: #177a3f;
 }
 
-.results-bar--blue {
-  background: linear-gradient(180deg, #3976df, #1545ad);
+.results-column--hub-5 .results-column__count,
+.results-column--hub-5 .results-column__label {
+  color: #1464b0;
+}
+
+.results-column--default .results-column__count,
+.results-column--default .results-column__label {
+  color: #8198a8;
+}
+
+.results-bar--hub-1 {
+  background: linear-gradient(180deg, #f25a9b, #c51e65);
+}
+
+.results-bar--hub-2 {
+  background: linear-gradient(180deg, #f7a84c, #d9680d);
+}
+
+.results-bar--hub-4 {
+  background: linear-gradient(180deg, #56bf7d, #177a3f);
+}
+
+.results-bar--hub-5 {
+  background: linear-gradient(180deg, #4aa0e5, #1464b0);
+}
+
+.results-bar--default {
+  background: linear-gradient(180deg, #b9c8d2, #8198a8);
 }
 
 .results-card--summary {

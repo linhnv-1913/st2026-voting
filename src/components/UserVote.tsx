@@ -226,19 +226,20 @@ export function UserVote() {
           </span>
         </div>
         <h1 id="vote-heading" className="festival-title">{config.question}</h1>
-        <p className="festival-copy">Chọn đúng 3 phương án bạn yêu thích nhất để hoàn tất lượt bình chọn.</p>
-        {config.endTime && (
-          <p className="festival-meta">
-            <Clock3 className="h-4 w-4" aria-hidden="true" />
-            Đóng lúc {new Date(config.endTime).toLocaleString('vi-VN')}
-          </p>
-        )}
 
+        <p id="vote-instructions" className="sr-only">
+          Chọn đúng 3 phương án bạn yêu thích nhất để hoàn tất lượt bình chọn.
+        </p>
         <div className="vote-progress" aria-live="polite">
-          <span>Danh sách lựa chọn</span>
+          <span id="vote-options-label">Danh sách lựa chọn</span>
           <strong>{selectedOptions.length}/3 đã chọn</strong>
         </div>
-        <div className="vote-options">
+        <div
+          className="vote-options"
+          role="group"
+          aria-labelledby="vote-options-label"
+          aria-describedby="vote-instructions"
+        >
           {config.options.map((option, index) => {
             const isSelected = selectedOptions.includes(option.id);
             const isDisabled = submitting || isExpired || hasVoted || (selectedOptions.length >= 3 && !isSelected);

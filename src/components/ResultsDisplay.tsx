@@ -5,17 +5,10 @@ import { ExternalLink, Loader2, Radio } from 'lucide-react';
 import { motion } from 'motion/react';
 import { auth, db } from '../firebase';
 import type { Config, Vote } from '../types';
-import { normalizeHubOptions } from '../hubOptions';
+import { getHubResultBarClass, getHubResultTextClass, normalizeHubOptions } from '../hubOptions';
 import { FestivalBrand } from './MatsuriShell';
 
 type AccessState = 'checking' | 'allowed' | 'denied';
-
-const barStyles = [
-  'results-bar--red',
-  'results-bar--sky',
-  'results-bar--gold',
-  'results-bar--blue',
-];
 
 export function ResultsDisplay() {
   const [accessState, setAccessState] = useState<AccessState>('checking');
@@ -137,7 +130,7 @@ export function ResultsDisplay() {
           ) : chartData.length > 0 ? (
             <div className="results-columns">
               {chartData.map((result, index) => (
-                <div className="results-column" key={result.id}>
+                <div className={`results-column ${getHubResultTextClass(result.text)}`} key={result.id}>
                   <strong className="results-column__count">
                     {result.voteCount}
                     <small>lượt</small>
@@ -154,7 +147,7 @@ export function ResultsDisplay() {
                       initial={{ height: 0 }}
                       animate={{ height: `${maxVoteCount > 0 ? (result.voteCount / maxVoteCount) * 100 : 0}%` }}
                       transition={{ duration: 0.55, ease: 'easeOut' }}
-                      className={`results-bar ${barStyles[index % barStyles.length]}`}
+                      className={`results-bar ${getHubResultBarClass(result.text)}`}
                     />
                   </div>
                   <span className="results-column__label">{result.text || `Phương án ${index + 1}`}</span>

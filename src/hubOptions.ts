@@ -40,3 +40,26 @@ export function getHubOptionClass(optionText: string) {
       return 'vote-option--hub-default';
   }
 }
+
+export function getHubResultBarClass(optionText: string) {
+  return getHubResultClass(optionText, 'results-bar');
+}
+
+export function getHubResultTextClass(optionText: string) {
+  return getHubResultClass(optionText, 'results-column');
+}
+
+function getHubResultClass(optionText: string, prefix: 'results-bar' | 'results-column') {
+  switch (getHubNumber(optionText)) {
+    case '1':
+      return `${prefix}--hub-1`;
+    case '2':
+      return `${prefix}--hub-2`;
+    case '4':
+      return `${prefix}--hub-4`;
+    case '5':
+      return `${prefix}--hub-5`;
+    default:
+      return `${prefix}--default`;
+  }
+}

@@ -1,6 +1,37 @@
-import type { Option } from './types';
+import type { HubId, Option, TeamBuildingScores } from './types';
 
 const canonicalHubSequence = ['Hub 1', 'Hub 2', 'Hub 4', 'Hub 5'];
+
+interface HubDefinition {
+  id: HubId;
+  label: string;
+  number: '1' | '2' | '4' | '5';
+}
+
+export const HUB_DEFINITIONS: readonly HubDefinition[] = [
+  { id: 'hub1', label: 'Hub 1', number: '1' },
+  { id: 'hub2', label: 'Hub 2', number: '2' },
+  { id: 'hub4', label: 'Hub 4', number: '4' },
+  { id: 'hub5', label: 'Hub 5', number: '5' },
+];
+
+export function createEmptyTeamBuildingScores(): TeamBuildingScores {
+  return { hub1: 0, hub2: 0, hub4: 0, hub5: 0 };
+}
+
+export function normalizeTeamBuildingScores(value: unknown): TeamBuildingScores {
+  const source = value && typeof value === 'object'
+    ? value as Partial<Record<HubId, unknown>>
+    : {};
+
+  return HUB_DEFINITIONS.reduce<TeamBuildingScores>((scores, hub) => {
+    const score = source[hub.id];
+    scores[hub.id] = typeof score === 'number' && Number.isFinite(score) && score >= 0
+      ? Math.trunc(score)
+      : 0;
+    return scores;
+  }, createEmptyTeamBuildingScores());
+}
 
 function getHubNumber(optionText: string) {
   return optionText.match(/\bhub\s*(\d+)\b/i)?.[1];

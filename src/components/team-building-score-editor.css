@@ -1,0 +1,103 @@
+.team-score-editor {
+  display: grid;
+  gap: 20px;
+}
+
+.team-score-editor__heading,
+.team-score-editor__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.team-score-editor__heading p {
+  margin: 5px 0 0;
+  color: #718096;
+  font-size: 0.78rem;
+}
+
+.team-score-editor__screen-link,
+.team-score-editor__actions button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1684bd, #0e5d91);
+  cursor: pointer;
+}
+
+.team-score-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.team-score-editor__field {
+  --score-color: #d31f62;
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--score-color) 35%, white);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--score-color) 7%, white);
+}
+
+.team-score-editor__field--hub2 { --score-color: #e8780b; }
+.team-score-editor__field--hub4 { --score-color: #159052; }
+.team-score-editor__field--hub5 { --score-color: #1875bf; }
+
+.team-score-editor__field span {
+  color: var(--score-color);
+  font-size: 0.76rem;
+  font-weight: 950;
+}
+
+.team-score-editor__field input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  color: #17314b;
+  font-size: 1.05rem;
+  font-weight: 900;
+  border: 1px solid rgba(35, 65, 88, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.team-score-editor__actions {
+  margin-top: 16px;
+}
+
+.team-score-editor__actions span,
+.team-score-editor__loading {
+  color: #66798b;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.team-score-editor__loading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.team-score-editor__actions button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+@media (max-width: 560px) {
+  .team-score-editor__heading,
+  .team-score-editor__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

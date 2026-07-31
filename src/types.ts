@@ -3,6 +3,15 @@ export interface Option {
   text: string;
 }
 
+export type HubId = 'hub1' | 'hub2' | 'hub4' | 'hub5';
+
+export type TeamBuildingScores = Record<HubId, number>;
+
+export interface TeamBuildingScoreDocument {
+  scores: TeamBuildingScores;
+  updatedAt: number;
+}
+
 export interface Config {
   id: string;
   question: string;

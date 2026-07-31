@@ -1,0 +1,41 @@
+{
+  "task": "Bổ sung bảng điểm Team building, QR và countdown/final reveal trên kết quả, đồng thời đổi đáp án user thành lưới 2x2.",
+  "mode": "parallel",
+  "acceptanceCriteria": [
+    "Admin nhập và lưu được điểm không âm cho Hub 1, Hub 2, Hub 4 và Hub 5 mà không ghi đè cấu hình poll.",
+    "Route /team-building đọc realtime và hiển thị bốn điểm Team building trên một trang riêng.",
+    "Màn /results mở được QR chứa chính xác https://sal.vn/c3-voting.",
+    "Màn /results đếm ngược theo endTime và không hiển thị countdown giả khi endTime rỗng.",
+    "Khi endTime hết hạn, Firestore không nhận phiếu mới, UI chuyển sang trạng thái đóng và hiển thị final reveal.",
+    "Final reveal xử lý đúng kết quả hòa và trường hợp chưa có phiếu, đồng thời tôn trọng reduced-motion.",
+    "Site user hiển thị option dạng lưới 2x2 gần vuông, không có số thứ tự và vẫn hỗ trợ chọn đúng ba phương án.",
+    "Các route mới hoạt động với BrowserRouter basename và bản build GitHub Pages."
+  ],
+  "touchpoints": [
+    "src/App.tsx",
+    "src/types.ts",
+    "src/hubOptions.ts",
+    "src/components/AdminPanel.tsx",
+    "src/components/ResultsDisplay.tsx",
+    "src/components/UserVote.tsx",
+    "src/index.css",
+    "firestore.rules",
+    "package.json",
+    "bun.lock"
+  ],
+  "blastRadius": [
+    "Firebase security rules and public read surface",
+    "Admin poll configuration workflow",
+    "Realtime result projection screen",
+    "Anonymous mobile voting interaction",
+    "GitHub Pages deep-link routing",
+    "Frontend dependency lockfile"
+  ],
+  "contracts": [
+    "config/main remains backward compatible with question, options, isActive and endTime",
+    "team-building/scores is publicly readable and admin writable only",
+    "votes remain immutable and rejected after endTime by Firestore rules",
+    "QR payload is exactly https://sal.vn/c3-voting",
+    "Hub identity remains Hub 1, Hub 2, Hub 4 and Hub 5"
+  ]
+}

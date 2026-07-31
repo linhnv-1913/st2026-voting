@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { ExternalLink, Loader2, Radio } from 'lucide-react';
-import { motion } from 'motion/react';
 import { auth, db } from '../firebase';
+import { getCountdownState } from '../countdown';
 import type { Config, Vote } from '../types';
-import { getHubResultBarClass, getHubResultTextClass, normalizeHubOptions } from '../hubOptions';
+import { normalizeHubOptions } from '../hubOptions';
+import { createFinalRevealResult } from './final-results-reveal';
 import { FestivalBrand } from './MatsuriShell';
+import { ResultsChart } from './results-chart';
+import { ResultsQrDialog } from './results-qr-dialog';
+import { ResultsSummary } from './results-summary';
+import './results-experience.css';
 
 type AccessState = 'checking' | 'allowed' | 'denied';
 
@@ -14,8 +19,13 @@ export function ResultsDisplay() {
   const [accessState, setAccessState] = useState<AccessState>('checking');
   const [config, setConfig] = useState<Config | null>(null);
   const [votes, setVotes] = useState<Vote[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const [votesLoaded, setVotesLoaded] = useState(false);
   const [dataError, setDataError] = useState('');
+  const [qrOpen, setQrOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const closeAttemptRef = useRef<string | null>(null);
+  const qrTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => auth.onAuthStateChanged(async currentUser => {
     if (!currentUser) {
@@ -38,15 +48,17 @@ export function ResultsDisplay() {
     const unsubscribeConfig = onSnapshot(
       doc(db, 'config', 'main'),
       snapshot => {
+        const data = snapshot.data();
         setConfig(snapshot.exists()
-          ? { id: snapshot.id, ...snapshot.data(), options: normalizeHubOptions(snapshot.data().options || []) } as Config
+          ? { id: snapshot.id, ...data, options: normalizeHubOptions(data?.options || []) } as Config
           : null);
-        setDataLoading(false);
+        setConfigLoaded(true);
+        setNow(Date.now());
       },
       error => {
         console.error('Failed to load poll configuration', error);
         setDataError('Không thể tải cấu hình bình chọn.');
-        setDataLoading(false);
+        setConfigLoaded(true);
       },
     );
 
@@ -54,12 +66,12 @@ export function ResultsDisplay() {
       collection(db, 'votes'),
       snapshot => {
         setVotes(snapshot.docs.map(vote => ({ id: vote.id, ...vote.data() } as Vote)));
-        setDataLoading(false);
+        setVotesLoaded(true);
       },
       error => {
         console.error('Failed to load vote results', error);
         setDataError('Không thể tải kết quả bình chọn.');
-        setDataLoading(false);
+        setVotesLoaded(true);
       },
     );
 
@@ -69,7 +81,46 @@ export function ResultsDisplay() {
     };
   }, [accessState]);
 
-  if (accessState === 'checking' || dataLoading && accessState === 'allowed') {
+  useEffect(() => {
+    if (!config?.endTime) return;
+
+    setNow(Date.now());
+    if (config.endTime <= Date.now()) return;
+
+    const timerId = window.setInterval(() => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      if (currentTime >= config.endTime!) window.clearInterval(timerId);
+    }, 1_000);
+
+    return () => window.clearInterval(timerId);
+  }, [config?.endTime]);
+
+  const countdown = getCountdownState(config?.endTime, now);
+  const chartData = useMemo(() => (config?.options || []).map(option => ({
+    ...option,
+    voteCount: votes.filter(vote => vote.optionIds?.includes(option.id) || vote.optionId === option.id).length,
+  })), [config?.options, votes]);
+  const finalResult = useMemo(() => (
+    countdown.isExpired && configLoaded && votesLoaded
+      ? createFinalRevealResult(chartData)
+      : null
+  ), [chartData, configLoaded, countdown.isExpired, votesLoaded]);
+
+  useEffect(() => {
+    if (!config?.isActive || !countdown.isExpired) return;
+
+    const attemptKey = `${config.id}:${config.endTime ?? 'none'}`;
+    if (closeAttemptRef.current === attemptKey) return;
+
+    closeAttemptRef.current = attemptKey;
+    void setDoc(doc(db, 'config', 'main'), { isActive: false }, { merge: true }).catch(error => {
+      console.error('Failed to persist closed poll state', error);
+      closeAttemptRef.current = null;
+    });
+  }, [config, countdown.isExpired]);
+
+  if (accessState === 'checking' || accessState === 'allowed' && (!configLoaded || !votesLoaded)) {
     return (
       <main className="results-screen results-screen--centered">
         <div className="results-loading">
@@ -88,22 +139,14 @@ export function ResultsDisplay() {
           <span className="festival-eyebrow">Màn hình kết quả</span>
           <h1 className="festival-title">Cần quyền quản trị</h1>
           <p className="festival-copy">Hãy đăng nhập trang quản trị trước khi mở màn hình kết quả độc lập.</p>
-          <Link to="/admin" className="festival-primary results-access-card__action">
-            Đi đến trang quản trị
-          </Link>
+          <Link to="/admin" className="festival-primary results-access-card__action">Đi đến trang quản trị</Link>
         </section>
       </main>
     );
   }
 
   const totalVotes = votes.length;
-  const isExpired = !!config?.endTime && Date.now() > config.endTime;
-  const isLive = !!config?.isActive && !isExpired;
-  const chartData = (config?.options || []).map(option => {
-    const voteCount = votes.filter(vote => vote.optionIds?.includes(option.id) || vote.optionId === option.id).length;
-    return { ...option, voteCount };
-  });
-  const maxVoteCount = Math.max(0, ...chartData.map(result => result.voteCount));
+  const isLive = !!config?.isActive && !countdown.isExpired;
 
   return (
     <main className="results-screen">
@@ -122,51 +165,18 @@ export function ResultsDisplay() {
       </header>
 
       <div className="results-screen__content" aria-live="polite">
-        <section className="results-card results-card--chart" aria-labelledby="live-results-heading">
-          <h1 id="live-results-heading" className="results-card__title">Kết quả hiện tại</h1>
-
-          {dataError ? (
-            <p className="festival-alert" role="alert">{dataError}</p>
-          ) : chartData.length > 0 ? (
-            <div className="results-columns">
-              {chartData.map((result, index) => (
-                <div className={`results-column ${getHubResultTextClass(result.text)}`} key={result.id}>
-                  <strong className="results-column__count">
-                    {result.voteCount}
-                    <small>lượt</small>
-                  </strong>
-                  <div
-                    className="results-column__track"
-                    role="progressbar"
-                    aria-label={`${result.text}: ${result.voteCount} lượt`}
-                    aria-valuemin={0}
-                    aria-valuemax={Math.max(totalVotes, 1)}
-                    aria-valuenow={result.voteCount}
-                  >
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${maxVoteCount > 0 ? (result.voteCount / maxVoteCount) * 100 : 0}%` }}
-                      transition={{ duration: 0.55, ease: 'easeOut' }}
-                      className={`results-bar ${getHubResultBarClass(result.text)}`}
-                    />
-                  </div>
-                  <span className="results-column__label">{result.text || `Phương án ${index + 1}`}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="results-empty">Chưa có phương án bình chọn để hiển thị.</p>
-          )}
-        </section>
-
-        <section className="results-card results-card--summary" aria-label="Tổng lượt bình chọn">
-          <strong className="results-total">{totalVotes}</strong>
-          <span className="results-total__label">Tổng lượt bình chọn</span>
-          <span className={`results-poll-status ${isLive ? 'results-poll-status--live' : ''}`}>
-            {isLive ? '● Poll đang mở' : 'Poll đã đóng'}
-          </span>
-        </section>
+        <ResultsChart data={chartData} error={dataError} totalVotes={totalVotes} />
+        <ResultsSummary
+          countdown={countdown}
+          finalResult={finalResult}
+          isLive={isLive}
+          onOpenQr={() => setQrOpen(true)}
+          qrTriggerRef={qrTriggerRef}
+          totalVotes={totalVotes}
+        />
       </div>
+
+      <ResultsQrDialog open={qrOpen} onClose={() => setQrOpen(false)} triggerRef={qrTriggerRef} />
     </main>
   );
 }

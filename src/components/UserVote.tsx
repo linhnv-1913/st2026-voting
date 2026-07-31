@@ -227,9 +227,6 @@ export function UserVote() {
         </div>
         <h1 id="vote-heading" className="festival-title">{config.question}</h1>
 
-        <p id="vote-instructions" className="sr-only">
-          Chọn đúng 3 phương án bạn yêu thích nhất để hoàn tất lượt bình chọn.
-        </p>
         <div className="vote-progress" aria-live="polite">
           <span id="vote-options-label">Danh sách lựa chọn</span>
           <strong>{selectedOptions.length}/3 đã chọn</strong>
@@ -238,9 +235,8 @@ export function UserVote() {
           className="vote-options"
           role="group"
           aria-labelledby="vote-options-label"
-          aria-describedby="vote-instructions"
         >
-          {config.options.map((option, index) => {
+          {config.options.map(option => {
             const isSelected = selectedOptions.includes(option.id);
             const isDisabled = submitting || isExpired || hasVoted || (selectedOptions.length >= 3 && !isSelected);
             return (
@@ -252,7 +248,7 @@ export function UserVote() {
                 onClick={() => toggleOption(option.id)}
                 className={`vote-option ${getHubOptionClass(option.text)} ${isSelected ? 'vote-option--selected' : ''} ${isDisabled && !isSelected ? 'vote-option--disabled' : ''}`}
               >
-                <span className="vote-option__number">{String(index + 1).padStart(2, '0')}</span>
+                <span className="vote-option__check" aria-hidden="true" />
                 <span className="vote-option__text">{option.text}</span>
               </button>
             );

@@ -72,6 +72,27 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Team building score rules
+    function isValidTeamBuildingScores(data) {
+      return data.keys().hasOnly(['scores', 'updatedAt']) &&
+             data.keys().hasAll(['scores', 'updatedAt']) &&
+             data.scores is map &&
+             data.scores.keys().hasOnly(['hub1', 'hub2', 'hub4', 'hub5']) &&
+             data.scores.keys().hasAll(['hub1', 'hub2', 'hub4', 'hub5']) &&
+             data.scores.hub1 is int && data.scores.hub1 >= 0 && data.scores.hub1 <= 1000000 &&
+             data.scores.hub2 is int && data.scores.hub2 >= 0 && data.scores.hub2 <= 1000000 &&
+             data.scores.hub4 is int && data.scores.hub4 >= 0 && data.scores.hub4 <= 1000000 &&
+             data.scores.hub5 is int && data.scores.hub5 >= 0 && data.scores.hub5 <= 1000000 &&
+             data.updatedAt is int;
+    }
+
+    match /team-building/{scoreId} {
+      allow read: if scoreId == 'scores';
+      allow create, update: if scoreId == 'scores' && isAdmin() &&
+                            isValidTeamBuildingScores(incoming());
+      allow delete: if false;
+    }
+
     // Admins Rules
     match /admins/{adminId} {
       allow read: if isAdmin() || request.auth.uid == adminId;

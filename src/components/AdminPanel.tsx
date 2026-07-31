@@ -8,6 +8,7 @@ import { normalizeHubOptions } from '../hubOptions';
 import { ExternalLink, Loader2, Plus, Trash2, LogOut } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FestivalBrand, MatsuriShell } from './MatsuriShell';
+import { TeamBuildingScoreEditor } from './team-building-score-editor';
 
 export function AdminPanel() {
   const [user, setUser] = useState(auth.currentUser);
@@ -421,6 +422,7 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
 
           {/* Results Panel */}
           <div className="admin-results-stack">
+            <TeamBuildingScoreEditor />
             <section className="admin-card">
               <h2 className="admin-section-title">Kết quả hiện tại</h2>
               <div className="space-y-5">

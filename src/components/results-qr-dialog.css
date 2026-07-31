@@ -1,0 +1,55 @@
+.results-qr-dialog {
+  width: min(92vw, 420px);
+  padding: 0;
+  border: 0;
+  border-radius: 28px;
+  background: transparent;
+}
+
+.results-qr-dialog::backdrop {
+  background: rgba(12, 32, 48, 0.56);
+  backdrop-filter: blur(5px);
+}
+
+.results-qr-dialog__sheet {
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+  text-align: center;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fffdfa, #f7fafc);
+  box-shadow: 0 26px 56px rgba(17, 48, 70, 0.28);
+}
+
+.results-qr-dialog__eyebrow,
+.results-qr-dialog__hint {
+  margin: 0;
+  color: #607181;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.results-qr-dialog__title {
+  margin: 0;
+  color: #123552;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.results-qr-dialog__code {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border-radius: 22px;
+  background: white;
+}
+
+.results-qr-dialog__close {
+  min-height: 44px;
+  color: white;
+  font-weight: 900;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #c81521, #ef6b44);
+  cursor: pointer;
+}

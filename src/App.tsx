@@ -17,7 +17,7 @@ export default function App() {
           <Route path="/" element={<UserVote />} />
           <Route path="/admin/*" element={<AdminPanel />} />
           <Route path="/results" element={<ResultsDisplay />} />
-          <Route path="team-building" element={<TeamBuildingScoreboard />} />
+          <Route path="/score" element={<TeamBuildingScoreboard />} />
         </Routes>
       </div>
     </Router>

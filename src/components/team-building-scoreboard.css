@@ -1,173 +1,133 @@
-.team-building-scoreboard-stage {
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: clamp(24px, 3vw, 32px);
-  padding-block: clamp(24px, 4vh, 48px);
+.matsuri-shell .team-building-scoreboard-stage {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100svh; padding: clamp(36px, 5vh, 72px) clamp(40px, 5vw, 96px);
 }
 
-.team-building-scoreboard-stage .matsuri-intro {
-  align-self: start;
-  max-width: min(100%, 980px);
-  margin: 0;
+.team-building-scoreboard-stage .matsuri-intro { display: none; }
+
+.matsuri-shell .team-building-scoreboard {
+  position: relative; width: min(1500px, 100%); max-width: 1500px; justify-self: center;
+  isolation: isolate; overflow: hidden; padding: clamp(36px, 3.5vw, 56px); color: #17304a;
+  border: 2px solid #f2c64d; border-top: 9px solid #d81920; border-radius: 32px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(255, 194, 47, 0.22), transparent 22%),
+    radial-gradient(circle at 8% 94%, rgba(33, 116, 185, 0.1), transparent 28%),
+    radial-gradient(circle at 10% 10%, rgba(225, 164, 28, 0.17) 0 1.5px, transparent 2px) 0 0 / 22px 22px,
+    linear-gradient(145deg, #fffefa 0%, #fff9e9 62%, #f6fbff 100%);
+  box-shadow: 0 28px 72px rgba(3, 23, 57, 0.32), 0 0 0 6px rgba(255, 255, 255, 0.34);
 }
 
-.team-building-scoreboard {
-  max-width: none;
-  justify-self: stretch;
-  padding: clamp(24px, 3vw, 42px);
+.matsuri-shell .team-building-scoreboard::before {
+  position: absolute; top: 0; right: 0; z-index: -1; width: 42%; height: 42%; content: "";
+  opacity: 0.42; background: repeating-conic-gradient(from 220deg at 100% 0, transparent 0 12deg, rgba(216, 25, 32, 0.08) 13deg 17deg, transparent 18deg 30deg);
+  pointer-events: none;
 }
 
-.team-building-scoreboard__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 20px;
+.matsuri-shell .team-building-scoreboard::after {
+  position: absolute; right: -26px; bottom: -54px; z-index: -1; width: 280px; height: 160px;
+  content: ""; opacity: 0.14;
+  background:
+    radial-gradient(circle at 20px 0, transparent 15px, #0b568b 16px 18px, transparent 19px) 0 0 / 40px 24px repeat-x,
+    radial-gradient(circle at 20px 0, transparent 15px, #0b568b 16px 18px, transparent 19px) 20px 20px / 40px 24px repeat-x;
+  transform: rotate(-7deg); pointer-events: none;
 }
 
-.team-building-scoreboard__title,
-.team-building-scoreboard__copy {
-  max-width: 760px;
+.team-building-scoreboard__header { margin-bottom: clamp(32px, 4vh, 48px); }
+
+.team-building-scoreboard .festival-brand {
+  margin: 0 0 clamp(22px, 2.5vh, 30px); padding: 10px 14px;
+  border: 1px solid rgba(216, 25, 32, 0.14); border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86); box-shadow: 0 10px 24px rgba(19, 48, 74, 0.1);
 }
 
-.team-building-scoreboard__live-note,
-.team-building-scoreboard__status,
-.team-building-scoreboard__meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+.matsuri-shell .team-building-scoreboard .team-building-scoreboard__title {
+  max-width: none; color: #132c47; font-size: clamp(2.8rem, 4.1vw, 4.6rem); line-height: 1;
+  text-shadow: 0 3px 0 rgba(255, 197, 47, 0.28);
 }
 
-.team-building-scoreboard__live-note {
-  flex: 0 0 auto;
-  margin: 4px 0 0;
-  padding: 10px 14px;
-  color: #0b568b;
-  font-size: 0.9rem;
-  font-weight: 800;
-  border-radius: 999px;
-  background: rgba(11, 86, 139, 0.1);
+.team-building-scoreboard__title::after {
+  display: block; width: clamp(120px, 13vw, 190px); height: 6px; margin-top: 18px; content: "";
+  border-radius: 999px; background: linear-gradient(90deg, #d81920 0 68%, #ffc52f 68%);
 }
 
 .team-building-scoreboard__status {
-  width: 100%;
-  margin-bottom: 22px;
-  padding: 14px 16px;
-  color: #13426a;
-  font-weight: 700;
-  border: 1px solid rgba(11, 86, 139, 0.16);
-  border-radius: 18px;
-  background: rgba(11, 86, 139, 0.08);
+  display: inline-flex; align-items: center; width: 100%; gap: 10px; margin-bottom: 22px; padding: 14px 16px;
+  color: #13426a; font-weight: 700; border: 1px solid rgba(11, 86, 139, 0.16); border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .team-building-scoreboard__status--error {
-  color: #8f1d1d;
-  border-color: rgba(216, 25, 32, 0.2);
-  background: rgba(216, 25, 32, 0.1);
+  color: #8f1d1d; border-color: rgba(216, 25, 32, 0.22); background: rgba(255, 238, 232, 0.9);
 }
 
 .team-building-scoreboard__grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(12px, 1.6vw, 18px);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(18px, 2vw, 30px);
 }
 
 .team-building-scoreboard__tile {
-  position: relative;
-  min-height: 220px;
-  padding: clamp(18px, 2vw, 24px);
-  overflow: hidden;
-  color: #17304a;
-  border: 1px solid rgba(19, 48, 74, 0.1);
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 230, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --hub-start: #fff4f8; --hub-end: #ffdbe8; --hub-accent: #d63d75; --hub-ink: #7a1e45;
+  --hub-border: #ef9bb9; --hub-shadow: rgba(185, 37, 91, 0.17);
+  position: relative; display: flex; min-width: 0; min-height: clamp(250px, 31vh, 340px); flex-direction: column;
+  container-type: inline-size; justify-content: space-between; overflow: hidden; padding: clamp(26px, 2.2vw, 34px); color: var(--hub-accent);
+  border: 1px solid var(--hub-border); border-radius: 26px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), transparent 42%), linear-gradient(145deg, var(--hub-start), var(--hub-end));
+  box-shadow: inset 0 5px 0 var(--hub-accent), 0 16px 30px var(--hub-shadow);
 }
 
 .team-building-scoreboard__tile::before {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 7px;
-  content: "";
-  background: currentColor;
-  opacity: 0.9;
+  position: absolute; right: -42px; bottom: -48px; width: 170px; height: 170px; content: "";
+  opacity: 0.14; border: 2px solid currentColor; border-radius: 50%;
+  box-shadow: 0 0 0 28px currentColor, 0 0 0 56px currentColor;
 }
 
-.team-building-scoreboard__tile--hub1 { color: #d9487d; }
-.team-building-scoreboard__tile--hub2 { color: #da7b17; }
-.team-building-scoreboard__tile--hub4 { color: #23855b; }
-.team-building-scoreboard__tile--hub5 { color: #2374b9; }
-
-.team-building-scoreboard__label,
-.team-building-scoreboard__meta {
-  color: #23425d;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.team-building-scoreboard__tile::after {
+  position: absolute; inset: 0; content: ""; opacity: 0.09;
+  background: radial-gradient(circle, currentColor 0 1.5px, transparent 2px) 0 0 / 18px 18px;
+  pointer-events: none;
 }
+
+.team-building-scoreboard__tile > * { position: relative; z-index: 1; }
+
+.team-building-scoreboard__tile--hub1 { --hub-start: #fff4f8; --hub-end: #ffdbe8; --hub-accent: #d63d75; --hub-ink: #7a1e45; --hub-border: #ef9bb9; --hub-shadow: rgba(185, 37, 91, 0.17); }
+.team-building-scoreboard__tile--hub2 { --hub-start: #fff8e9; --hub-end: #ffe0ab; --hub-accent: #d97008; --hub-ink: #783b00; --hub-border: #efb45f; --hub-shadow: rgba(183, 93, 5, 0.17); }
+.team-building-scoreboard__tile--hub4 { --hub-start: #effbf5; --hub-end: #c5ead8; --hub-accent: #23855b; --hub-ink: #12583e; --hub-border: #80c6a8; --hub-shadow: rgba(27, 112, 76, 0.16); }
+.team-building-scoreboard__tile--hub5 { --hub-start: #f0f8ff; --hub-end: #c9e3f8; --hub-accent: #2374b9; --hub-ink: #154f80; --hub-border: #82b9e4; --hub-shadow: rgba(24, 97, 160, 0.16); }
 
 .team-building-scoreboard__label {
-  display: block;
-  font-size: 0.92rem;
+  display: block; width: fit-content; padding: 0; color: var(--hub-ink);
+  font-size: clamp(1rem, 1.25vw, 1.2rem); font-weight: 900; letter-spacing: 0.08em;
+  border: 0; background: none; text-shadow: none; text-transform: uppercase;
 }
 
 .team-building-scoreboard__value {
-  display: block;
-  margin: clamp(18px, 3vh, 28px) 0 10px;
-  font-variant-numeric: tabular-nums;
+  display: block; width: 100%; max-width: 100%; margin-top: 28px; padding: 0;
+  font-variant-numeric: tabular-nums; border: 0; background: none; box-shadow: none;
 }
 
 .team-building-scoreboard__value-text {
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  color: inherit;
-  font-size: clamp(3.2rem, 6vw, 5.8rem);
-  line-height: 0.92;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: block; width: 100%; max-width: none; overflow: visible; color: var(--hub-ink);
+  font-size: clamp(3.3rem, 4.05vw, 5.1rem); letter-spacing: -0.055em; line-height: 0.94;
+  text-overflow: clip; text-shadow: 0 3px 0 rgba(255, 255, 255, 0.72); white-space: nowrap;
 }
 
-.team-building-scoreboard__meta {
-  font-size: 0.78rem;
+@supports (font-size: 1cqi) {
+  .team-building-scoreboard__value-text {
+    font-size: clamp(1.8rem, calc(185cqi / var(--score-length, 5)), 5.1rem);
+  }
 }
 
 @media (max-width: 1100px) {
-  .team-building-scoreboard__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .team-building-scoreboard__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 720px) {
-  .team-building-scoreboard__header {
-    flex-direction: column;
-  }
-
-  .team-building-scoreboard__live-note {
-    width: fit-content;
-  }
-
-  .team-building-scoreboard__tile {
-    min-height: 180px;
-    border-radius: 20px;
-  }
+  .matsuri-shell .team-building-scoreboard-stage { min-height: auto; padding: 24px 15px 64px; }
+  .matsuri-shell .team-building-scoreboard { border-radius: 24px; padding: 28px 20px; }
+  .team-building-scoreboard__tile { min-height: 180px; border-radius: 20px; }
 }
 
 @media (max-width: 420px) {
-  .team-building-scoreboard {
-    padding-inline: 18px;
-  }
-
-  .team-building-scoreboard__grid {
-    gap: 10px;
-  }
-
-  .team-building-scoreboard__tile {
-    min-height: 156px;
-    padding: 16px;
-  }
-
-  .team-building-scoreboard__value-text {
-    font-size: clamp(2.3rem, 13vw, 3.3rem);
-  }
+  .team-building-scoreboard__grid { gap: 10px; }
+  .team-building-scoreboard__tile { min-height: 156px; padding: 16px; }
+  .team-building-scoreboard__value-text { font-size: clamp(2.25rem, 12vw, 3rem); }
 }

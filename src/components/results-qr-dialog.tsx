@@ -1,8 +1,8 @@
-import { useEffect, useRef, type RefObject } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
-import './results-qr-dialog.css';
+import { useEffect, useRef, type RefObject } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import "./results-qr-dialog.css";
 
-const RESULTS_QR_URL = 'https://sal.vn/c3-voting';
+const RESULTS_QR_URL = "https://sal.vn/c3-voting";
 
 interface ResultsQrDialogProps {
   open: boolean;
@@ -10,7 +10,11 @@ interface ResultsQrDialogProps {
   triggerRef: RefObject<HTMLButtonElement | null>;
 }
 
-export function ResultsQrDialog({ open, onClose, triggerRef }: ResultsQrDialogProps) {
+export function ResultsQrDialog({
+  open,
+  onClose,
+  triggerRef,
+}: ResultsQrDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -35,8 +39,8 @@ export function ResultsQrDialog({ open, onClose, triggerRef }: ResultsQrDialogPr
       requestAnimationFrame(() => triggerRef.current?.focus());
     };
 
-    dialog.addEventListener('close', handleClose);
-    return () => dialog.removeEventListener('close', handleClose);
+    dialog.addEventListener("close", handleClose);
+    return () => dialog.removeEventListener("close", handleClose);
   }, [onClose, triggerRef]);
 
   return (
@@ -44,19 +48,23 @@ export function ResultsQrDialog({ open, onClose, triggerRef }: ResultsQrDialogPr
       ref={dialogRef}
       className="results-qr-dialog"
       aria-labelledby="results-qr-title"
-      onClick={event => {
+      onClick={(event) => {
         if (event.target === dialogRef.current) dialogRef.current?.close();
       }}
     >
       <section className="results-qr-dialog__sheet">
         <p className="results-qr-dialog__eyebrow">Mã QR vào trang bình chọn</p>
-        <h2 id="results-qr-title" className="results-qr-dialog__title">https://sal.vn/c3-voting</h2>
+        <h2 id="results-qr-title" className="results-qr-dialog__title">
+          https://sal.vn/c3-voting
+        </h2>
         <div className="results-qr-dialog__code">
-          <QRCodeSVG value={RESULTS_QR_URL} size={224} includeMargin level="M" />
+          <QRCodeSVG
+            value={RESULTS_QR_URL}
+            size={360}
+            includeMargin
+            level="M"
+          />
         </div>
-        <p className="results-qr-dialog__hint">
-          Quét mã hoặc mở đường dẫn này trên thiết bị khán giả để vào trang bình chọn.
-        </p>
         <button
           ref={closeButtonRef}
           type="button"

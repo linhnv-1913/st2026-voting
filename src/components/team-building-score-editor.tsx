@@ -64,7 +64,7 @@ export function TeamBuildingScoreEditor() {
           <h2 id="team-score-editor-heading" className="admin-section-title">Điểm Team building</h2>
           <p>Cập nhật tổng điểm đã có của từng Hub.</p>
         </div>
-        <Link to="/team-building" target="_blank" rel="noreferrer" className="team-score-editor__screen-link">
+        <Link to="/score" target="_blank" rel="noreferrer" className="team-score-editor__screen-link">
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
           Mở bảng điểm
         </Link>

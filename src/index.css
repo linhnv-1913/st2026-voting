@@ -340,6 +340,61 @@ input:focus-visible {
   box-shadow: 0 0 0 4px rgba(14, 127, 196, 0.13);
 }
 
+.voter-identity-field {
+  z-index: 5;
+  margin-top: 22px;
+}
+
+.voter-input-wrap {
+  position: relative;
+}
+
+.voter-identity__hint {
+  margin: 7px 2px 0;
+  color: #718193;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.voter-identity-field .festival-alert {
+  margin-top: 8px;
+}
+
+.voter-suggestions {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid #cbd8e2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(19, 37, 59, 0.16);
+}
+
+.voter-suggestion {
+  width: 100%;
+  padding: 10px 11px;
+  color: #29435d;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: left;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.voter-suggestion:hover,
+.voter-suggestion--active {
+  color: #075887;
+  background: #eaf6fc;
+}
+
 .festival-alert {
   padding: 11px 13px;
   color: #9f1320;

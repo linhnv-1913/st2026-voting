@@ -18,10 +18,11 @@
       "type": "object",
       "properties": {
         "optionIds": { "type": "array", "minItems": 3, "maxItems": 3 },
+        "username": { "type": "string", "maxLength": 128 },
         "userId": { "type": "string", "maxLength": 128 },
         "timestamp": { "type": "integer" }
       },
-      "required": ["optionIds", "userId", "timestamp"]
+      "required": ["optionIds", "username", "userId", "timestamp"]
     },
     "Admin": {
       "title": "Admin",

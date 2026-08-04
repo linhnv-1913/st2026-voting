@@ -12,9 +12,18 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-    
+
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUsername(username) {
+      return username is string && username.size() <= 128 &&
+             username.matches('^[a-z0-9]+([._\\-][a-z0-9]+)*$');
+    }
+
+    function voteDocumentId(uid) {
+      return 'vote_' + uid;
     }
 
     function incoming() {
@@ -49,8 +58,8 @@ service cloud.firestore {
     }
 
     function isValidVote(data) {
-      return data.keys().hasOnly(['optionIds', 'userId', 'timestamp']) &&
-             data.keys().hasAll(['optionIds', 'userId', 'timestamp']) &&
+      return data.keys().hasOnly(['optionIds', 'username', 'userId', 'timestamp']) &&
+             data.keys().hasAll(['optionIds', 'username', 'userId', 'timestamp']) &&
              data.optionIds is list && data.optionIds.size() == 3 &&
              data.optionIds[0] is string && data.optionIds[0].size() <= 50 &&
              data.optionIds[1] is string && data.optionIds[1].size() <= 50 &&
@@ -58,16 +67,38 @@ service cloud.firestore {
              data.optionIds[0] != data.optionIds[1] &&
              data.optionIds[0] != data.optionIds[2] &&
              data.optionIds[1] != data.optionIds[2] &&
+             isValidUsername(data.username) &&
              data.userId == request.auth.uid &&
-             data.timestamp is number;
+             data.timestamp is number &&
+             getAfter(/databases/$(database)/documents/voter-claims/$(data.username)).data.userId == request.auth.uid;
+    }
+
+    function isValidVoterClaim(data, username) {
+      return data.keys().hasOnly(['username', 'userId', 'timestamp']) &&
+             data.keys().hasAll(['username', 'userId', 'timestamp']) &&
+             data.username == username &&
+             isValidUsername(username) &&
+             data.userId == request.auth.uid &&
+             data.timestamp is number &&
+             getAfter(/databases/$(database)/documents/votes/$(voteDocumentId(request.auth.uid))).data.username == username &&
+             getAfter(/databases/$(database)/documents/votes/$(voteDocumentId(request.auth.uid))).data.userId == request.auth.uid;
+    }
+
+    match /voter-claims/{username} {
+      // The user needs a point lookup to show the "already voted" error.
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && isValidVoterClaim(incoming(), username) && isPollOpen();
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     match /votes/{voteId} {
-      allow get: if isAdmin() || (isSignedIn() && voteId == 'vote_' + request.auth.uid);
+      allow get: if isAdmin() || (isSignedIn() && voteId == voteDocumentId(request.auth.uid));
       allow list: if isAdmin();
-      // A signed-in account gets one immutable vote document while the poll is open.
+      // The username claim and this immutable UID vote must be created atomically.
       allow create: if isSignedIn() && isValidId(voteId) && isValidVote(incoming()) &&
-                    voteId == 'vote_' + request.auth.uid && isPollOpen();
+                    voteId == voteDocumentId(request.auth.uid) && isPollOpen();
       allow update: if false;
       allow delete: if isAdmin();
     }
@@ -97,7 +128,7 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isAdmin() || request.auth.uid == adminId;
       // Bootstrapping: allow creation if no admins exist OR if already admin
-      allow create: if isSignedIn() && isValidId(adminId) && 
+      allow create: if isSignedIn() && isValidId(adminId) &&
                     (isAdmin() || request.auth.token.email == "nguyen.van.linh-c@sun-asterisk.com" || request.auth.token.email == "admin@matsuri.com");
       allow update, delete: if isAdmin();
     }

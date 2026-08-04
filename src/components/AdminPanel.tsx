@@ -272,10 +272,19 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
 
     setIsResettingVotes(true);
     try {
-      const snapshot = await getDocs(collection(db, 'votes'));
-      for (let index = 0; index < snapshot.docs.length; index += 500) {
+      const [voteSnapshot, claimSnapshot] = await Promise.all([
+        getDocs(collection(db, 'votes')),
+        getDocs(collection(db, 'voter-claims')),
+      ]);
+      const documentsToDelete = [
+        ...voteSnapshot.docs,
+        ...claimSnapshot.docs,
+      ];
+      for (let index = 0; index < documentsToDelete.length; index += 500) {
         const batch = writeBatch(db);
-        snapshot.docs.slice(index, index + 500).forEach(vote => batch.delete(vote.ref));
+        documentsToDelete
+          .slice(index, index + 500)
+          .forEach(document => batch.delete(document.ref));
         await batch.commit();
       }
     } catch (error) {

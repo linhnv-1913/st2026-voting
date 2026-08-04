@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { doc, onSnapshot, setDoc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import {
   onAuthStateChanged,
   signInAnonymously,
@@ -8,6 +8,11 @@ import {
 import { voterAuth, voterDb } from "../firebase";
 import { Config } from "../types";
 import { getHubOptionClass, normalizeHubOptions } from "../hubOptions";
+import {
+  fetchVoterNames,
+  isValidSlackUsername,
+  normalizeSlackUsername,
+} from "../voterNames";
 import { Clock3, Loader2, RotateCcw } from "lucide-react";
 import { motion } from "motion/react";
 import { FestivalBrand, MatsuriShell } from "./MatsuriShell";
@@ -29,6 +34,16 @@ export function UserVote() {
   const [config, setConfig] = useState<Config | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [hasVoted, setHasVoted] = useState(false);
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [voteError, setVoteError] = useState("");
+  const [voterNames, setVoterNames] = useState<Set<string> | null>(null);
+  const [voterNamesLoading, setVoterNamesLoading] = useState(true);
+  const [voterNamesError, setVoterNamesError] = useState("");
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] =
+    useState(0);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState("");
@@ -36,6 +51,26 @@ export function UserVote() {
   const [now, setNow] = useState(() => Date.now());
   const [user, setUser] = useState<User | null>(voterAuth.currentUser);
   const anonymousSignInPending = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    void fetchVoterNames()
+      .then((names) => {
+        if (active) setVoterNames(names);
+      })
+      .catch((error) => {
+        console.error("Failed to load voter names", error);
+        if (active)
+          setVoterNamesError("Không thể tải danh sách tên bình chọn.");
+      })
+      .finally(() => {
+        if (active) setVoterNamesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(
     () =>
@@ -112,6 +147,7 @@ export function UserVote() {
         setSelectedOptions(
           data.optionIds || (data.optionId ? [data.optionId] : []),
         );
+        if (typeof data.username === "string") setUsername(data.username);
         setHasVoted(true);
       } catch (error) {
         console.error("Failed to fetch vote", error);
@@ -119,6 +155,57 @@ export function UserVote() {
     };
     void fetchMyVote();
   }, [user]);
+
+  const validateUsername = async (): Promise<string | null> => {
+    const normalized = normalizeSlackUsername(username);
+    setUsernameError("");
+    setVoteError("");
+
+    if (!normalized) {
+      setUsernameError("Vui lòng nhập họ và tên của bạn.");
+      return null;
+    }
+    if (!isValidSlackUsername(normalized)) {
+      setUsernameError("Tên phải có dạng ho.va.ten, ví dụ nguyen.van.linh-c.");
+      return null;
+    }
+    if (!voterNames) {
+      setUsernameError(
+        voterNamesError || "Chưa tải được danh sách tên bình chọn.",
+      );
+      return null;
+    }
+    if (!voterNames.has(normalized)) {
+      setUsernameError(
+        "Tên này không có trong danh sách người được bình chọn.",
+      );
+      return null;
+    }
+
+    setUsernameChecking(true);
+    try {
+      const claim = await getDoc(doc(voterDb, "voter-claims", normalized));
+      if (claim.exists()) {
+        setUsernameError(`${normalized} đã vote rồi`);
+        return null;
+      }
+      return normalized;
+    } catch (error) {
+      console.error("Failed to check voter name", error);
+      setUsernameError("Không thể kiểm tra tên. Vui lòng thử lại.");
+      return null;
+    } finally {
+      setUsernameChecking(false);
+    }
+  };
+
+  const selectUsername = (value: string) => {
+    setUsername(value);
+    setUsernameError("");
+    setVoteError("");
+    setHighlightedSuggestionIndex(0);
+    setSuggestionsOpen(false);
+  };
 
   const toggleOption = (id: string) => {
     if (
@@ -148,21 +235,38 @@ export function UserVote() {
 
     setSubmitting(true);
     try {
-      await setDoc(doc(voterDb, "votes", `vote_${user.uid}`), {
-        optionIds: selectedOptions,
+      const normalizedUsername = await validateUsername();
+      if (!normalizedUsername) return;
+
+      const timestamp = Date.now();
+      const batch = writeBatch(voterDb);
+      batch.set(doc(voterDb, "voter-claims", normalizedUsername), {
+        username: normalizedUsername,
         userId: user.uid,
-        timestamp: Date.now(),
+        timestamp,
       });
+      batch.set(doc(voterDb, "votes", `vote_${user.uid}`), {
+        optionIds: selectedOptions,
+        username: normalizedUsername,
+        userId: user.uid,
+        timestamp,
+      });
+      await batch.commit();
       setHasVoted(true);
     } catch (error) {
       console.error(error);
-      alert("Không thể gửi phiếu. Poll có thể đã đóng hoặc bạn đã bỏ phiếu.");
+      const code = error instanceof Error && "code" in error ? error.code : "";
+      if (code === "already-exists" || code === "permission-denied") {
+        setUsernameError("Tên này đã vote rồi hoặc poll vừa được đóng.");
+      } else {
+        setVoteError("Không thể gửi phiếu. Vui lòng thử lại.");
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading || sessionLoading) {
+  if (loading || sessionLoading || voterNamesLoading) {
     return (
       <MatsuriShell contentClassName="matsuri-stage--user">
         <section
@@ -210,6 +314,35 @@ export function UserVote() {
     );
   }
 
+  if (voterNamesError) {
+    return (
+      <MatsuriShell contentClassName="matsuri-stage--user">
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="festival-card festival-card--user festival-card--compact"
+          aria-labelledby="voter-list-error-heading"
+        >
+          <FestivalBrand />
+          <h1 id="voter-list-error-heading" className="festival-title">
+            Chưa thể bắt đầu bình chọn
+          </h1>
+          <p className="festival-alert" role="alert">
+            {voterNamesError}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="festival-primary mt-6 w-full"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
+            Thử lại
+          </button>
+        </motion.section>
+      </MatsuriShell>
+    );
+  }
+
   if (!config || !config.isActive) {
     return (
       <MatsuriShell contentClassName="matsuri-stage--user">
@@ -232,6 +365,18 @@ export function UserVote() {
   const countdown = config.endTime
     ? formatCountdown(config.endTime, now)
     : null;
+  const normalizedInputUsername = normalizeSlackUsername(username);
+  const voterSuggestions: string[] =
+    !hasVoted &&
+    normalizedInputUsername.length >= 2 &&
+    voterNames !== null &&
+    suggestionsOpen &&
+    !voterNames.has(normalizedInputUsername)
+      ? Array.from<string>(voterNames)
+          .filter((name) => name.startsWith(normalizedInputUsername))
+          .sort()
+          .slice(0, 6)
+      : [];
 
   return (
     <MatsuriShell contentClassName="matsuri-stage--user">
@@ -269,6 +414,120 @@ export function UserVote() {
         <h1 id="vote-heading" className="festival-title">
           {config.question}
         </h1>
+
+        <div className="festival-field voter-identity-field">
+          <label htmlFor="voter-username" className="festival-field__label">
+            Tên của bạn
+          </label>
+          <div className="voter-input-wrap">
+            <input
+              id="voter-username"
+              type="text"
+              value={username}
+              onChange={(event) => {
+                setUsername(event.target.value);
+                setUsernameError("");
+                setVoteError("");
+                setHighlightedSuggestionIndex(0);
+                setSuggestionsOpen(true);
+              }}
+              onFocus={() => {
+                setSuggestionsOpen(true);
+                setHighlightedSuggestionIndex(0);
+              }}
+              onKeyDown={(event) => {
+                if (!voterSuggestions.length) return;
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  setHighlightedSuggestionIndex(
+                    (current) => (current + 1) % voterSuggestions.length,
+                  );
+                } else if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  setHighlightedSuggestionIndex(
+                    (current) =>
+                      (current - 1 + voterSuggestions.length) %
+                      voterSuggestions.length,
+                  );
+                } else if (event.key === "Enter") {
+                  event.preventDefault();
+                  if (highlightedSuggestionIndex >= 0) {
+                    selectUsername(
+                      voterSuggestions[highlightedSuggestionIndex],
+                    );
+                  }
+                } else if (event.key === "Escape") {
+                  setHighlightedSuggestionIndex(-1);
+                  setSuggestionsOpen(false);
+                }
+              }}
+              onBlur={() => {
+                setSuggestionsOpen(false);
+                void validateUsername();
+              }}
+              placeholder="ho.va.ten"
+              autoComplete="username"
+              spellCheck={false}
+              disabled={hasVoted || submitting}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={suggestionsOpen && voterSuggestions.length > 0}
+              aria-controls={
+                suggestionsOpen && voterSuggestions.length > 0
+                  ? "voter-username-suggestions"
+                  : undefined
+              }
+              aria-activedescendant={
+                suggestionsOpen &&
+                voterSuggestions.length > 0 &&
+                highlightedSuggestionIndex >= 0
+                  ? `voter-suggestion-${highlightedSuggestionIndex}`
+                  : undefined
+              }
+              aria-invalid={Boolean(usernameError)}
+              aria-describedby="voter-username-help voter-username-error"
+              className="festival-input"
+            />
+            {voterSuggestions.length > 0 && (
+              <div
+                id="voter-username-suggestions"
+                className="voter-suggestions"
+                role="listbox"
+                aria-label="Tên hợp lệ"
+              >
+                {voterSuggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion}
+                    id={`voter-suggestion-${index}`}
+                    type="button"
+                    role="option"
+                    tabIndex={-1}
+                    aria-selected={index === highlightedSuggestionIndex}
+                    className={`voter-suggestion${index === highlightedSuggestionIndex ? " voter-suggestion--active" : ""}`}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      selectUsername(suggestion);
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <p id="voter-username-help" className="voter-identity__hint">
+            Nhập theo format: ho.va.ten
+          </p>
+          {usernameError && (
+            <p
+              id="voter-username-error"
+              className="festival-alert"
+              role="alert"
+            >
+              {usernameError}
+            </p>
+          )}
+        </div>
 
         <div className="vote-progress" aria-live="polite">
           <span id="vote-options-label">Danh sách lựa chọn</span>
@@ -308,7 +567,11 @@ export function UserVote() {
               hasVoted ||
               isExpired ||
               selectedOptions.length !== 3 ||
-              submitting
+              submitting ||
+              usernameChecking ||
+              Boolean(usernameError) ||
+              !normalizedInputUsername ||
+              !voterNames?.has(normalizedInputUsername)
             }
             onClick={handleVote}
             className={`festival-primary vote-submit ${hasVoted ? "festival-primary--success" : selectedOptions.length === 3 && !isExpired ? "" : "festival-primary--muted"}`}
@@ -321,6 +584,11 @@ export function UserVote() {
                   ? "Đang gửi..."
                   : `Bình chọn (${selectedOptions.length}/3)`}
           </button>
+          {voteError && (
+            <p className="festival-alert mt-3" role="alert">
+              {voteError}
+            </p>
+          )}
         </div>
       </motion.section>
     </MatsuriShell>

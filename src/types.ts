@@ -24,6 +24,7 @@ export interface Vote {
   id: string;
   optionId?: string; // Kept for backward compatibility
   optionIds?: string[]; // Supporting 3 selections
+  username?: string;
   userId: string;
   timestamp: number;
 }

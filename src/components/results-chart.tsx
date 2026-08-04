@@ -22,7 +22,9 @@ export function ResultsChart({ data, error, isFinal, totalVotes }: ResultsChartP
       className={`results-card results-card--chart ${isFinal ? 'results-card--final' : ''}`}
       aria-labelledby="live-results-heading"
     >
-      <h1 id="live-results-heading" className="results-card__title">Kết quả hiện tại</h1>
+      <h1 id="live-results-heading" className="results-card__title">
+        {isFinal ? 'Kết quả bình chọn chung cuộc' : 'Kết quả hiện tại'}
+      </h1>
       {error ? <p className="festival-alert" role="alert">{error}</p> : data.length > 0 ? (
         <div className="results-columns">
           {data.map((result, index) => {

@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { UserVote } from './components/UserVote';
 import { AdminPanel } from './components/AdminPanel';
 import { ResultsDisplay } from './components/ResultsDisplay';
+import { FinalAwardsDisplay } from './components/FinalAwardsDisplay';
 import { TeamBuildingScoreboard } from './components/team-building-scoreboard';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/" element={<UserVote />} />
           <Route path="/admin/*" element={<AdminPanel />} />
           <Route path="/results" element={<ResultsDisplay />} />
+          <Route path="/final-awards" element={<FinalAwardsDisplay />} />
           <Route path="/score" element={<TeamBuildingScoreboard />} />
         </Routes>
       </div>

@@ -24,7 +24,7 @@ export function createFinalRevealResult(results: RevealCandidate[]): FinalReveal
     return {
       kind: 'zero',
       headline: 'Chưa có phiếu bầu nào được ghi nhận',
-      detail: 'Kết quả chung cuộc sẽ hiển thị tại đây ngay khi có phiếu hợp lệ.',
+      detail: 'Không có đội nhận điểm vote trong vòng này.',
     };
   }
 
@@ -32,8 +32,8 @@ export function createFinalRevealResult(results: RevealCandidate[]): FinalReveal
   if (leaders.length === 1) {
     return {
       kind: 'winner',
-      headline: `${leaders[0].text || 'Phương án ẩn danh'} dẫn đầu`,
-      detail: `${leaders[0].voteCount} lượt chọn — vị trí số 1 chung cuộc.`,
+      headline: `${leaders[0].text || 'Phương án ẩn danh'} dẫn đầu bình chọn`,
+      detail: `${leaders[0].voteCount} lượt chọn — nhận điểm vote hạng 1.`,
     };
   }
 
@@ -64,7 +64,7 @@ export function FinalResultsReveal({ result }: FinalResultsRevealProps) {
       animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
       transition={reducedMotion ? { duration: 0 } : { duration: 0.55, ease: 'easeOut' }}
     >
-      <span className="results-final-reveal__eyebrow">Kết quả chung cuộc</span>
+      <span className="results-final-reveal__eyebrow">Kết quả bình chọn</span>
       <strong className="results-final-reveal__headline">{result.headline}</strong>
       <p className="results-final-reveal__detail">{result.detail}</p>
     </motion.section>

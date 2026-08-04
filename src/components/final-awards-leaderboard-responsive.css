@@ -1,0 +1,118 @@
+@media (min-width: 621px) {
+  .final-awards__header h1 {
+    line-height: 0.8;
+  }
+
+  .final-awards__header h1 span {
+    color: #ffe9a2;
+    background:
+      radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 1.25px, transparent 1.5px) 0 1px / 8px 8px,
+      linear-gradient(180deg, #fffbd5 0%, #ffe17d 34%, #efad31 68%, #fff0a4 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: clamp(1px, 0.13vw, 2px) #7e190a;
+    text-shadow:
+      1px 0 0 #ffd25a,
+      -1px 0 0 #ffd25a,
+      0 -1px 0 #fff2a0,
+      0 3px 0 #a52b0f,
+      0 6px 0 #651609,
+      0 10px 14px rgba(64, 16, 7, 0.46);
+  }
+
+  .final-awards__header h1 span:first-child {
+    font-size: 0.7em;
+  }
+}
+
+@media (max-aspect-ratio: 4 / 3) and (min-width: 621px) {
+  .final-awards {
+    padding-right: clamp(10px, 2.4vw, 24px);
+    padding-left: clamp(10px, 2.4vw, 24px);
+  }
+
+  .final-awards__header h1 {
+    font-size: clamp(2.4rem, min(9vw, 7.5vh), 5.2rem);
+  }
+
+  .final-awards__podium { gap: clamp(3px, 0.8vw, 8px); }
+  .final-awards__panel { padding-top: clamp(22px, 7vw, 44px); }
+  .final-awards__panel--rank-1 { --award-offset: clamp(-34px, -4vh, -20px); }
+  .final-awards__panel--rank-2 { --award-offset: clamp(-16px, -2vh, -8px); }
+  .final-awards__artwork { aspect-ratio: 0.78; }
+}
+
+@media (min-width: 900px) and (min-height: 680px) {
+  .final-awards__header { margin-bottom: clamp(22px, 3vh, 38px); }
+  .final-awards__header h1 { line-height: 0.86; }
+}
+
+@media (min-width: 900px) and (max-height: 800px) {
+  .final-awards { padding-top: 14px; padding-bottom: 18px; }
+  .final-awards__header { margin-bottom: 15px; }
+  .final-awards__header h1 { font-size: clamp(2.6rem, 7.8vh, 4rem); }
+  .final-awards__podium { width: min(1260px, 100%); padding: 15px; }
+  .final-awards__panel { padding-top: 42px; }
+  .final-awards__panel--rank-1 { --award-offset: -24px; }
+  .final-awards__panel--rank-2 { --award-offset: -10px; }
+  .final-awards__score-plate { padding-top: 10px; padding-bottom: 10px; }
+  .final-awards__score-plate strong { font-size: clamp(1.5rem, 5.7vh, 2.8rem); }
+  .final-awards__ribbon { margin-top: 13px; padding-top: 7px; padding-bottom: 7px; }
+}
+
+@media (max-width: 760px) {
+  .final-awards::before {
+    opacity: 0.32;
+    background-image: url("/matsuri-key-visual-mobile.jpg");
+    background-position: center top;
+  }
+}
+
+@media (max-width: 620px) {
+  .final-awards {
+    min-height: 100svh;
+    overflow: visible;
+    padding: 22px 10px 36px;
+  }
+
+  .final-awards__header { margin-bottom: 24px; }
+  .final-awards__header p { padding: 4px 12px; }
+  .final-awards__header h1 { font-size: clamp(2.55rem, 13vw, 4.1rem); }
+
+  .final-awards__podium {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 22px 8px;
+    padding: 28px 8px 18px;
+    border-radius: 18px;
+  }
+
+  .final-awards__item--slot-1,
+  .final-awards__item--slot-2,
+  .final-awards__item--slot-3,
+  .final-awards__item--slot-4 {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .final-awards__panel { --award-offset: 0px; padding-top: 31px; }
+  .final-awards__medal { width: clamp(50px, 15vw, 70px); }
+  .final-awards__medal strong { font-size: clamp(1.25rem, 5.8vw, 1.8rem); }
+  .final-awards__artwork { aspect-ratio: 0.94; border-width: 3px; border-radius: 10px 10px 4px 4px; }
+  .final-awards__score-plate { width: 94%; padding: 10px 4px 11px; }
+  .final-awards__score-plate span { font-size: clamp(0.5rem, 2.4vw, 0.68rem); letter-spacing: 0.04em; }
+  .final-awards__score-plate strong { font-size: clamp(1.45rem, 8vw, 2.2rem); }
+  .final-awards__item::after { right: -5%; left: -5%; min-height: 25px; border-width: 2px; }
+  .final-awards__ribbon { width: min(96%, 520px); padding: 9px 14px; font-size: clamp(0.58rem, 2.8vw, 0.76rem); }
+}
+
+@media (max-width: 350px) {
+  .final-awards { padding-right: 6px; padding-left: 6px; }
+  .final-awards__podium { gap: 20px 5px; padding-right: 5px; padding-left: 5px; }
+  .final-awards__header h1 { font-size: 2.55rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .final-awards__header h1 { transform: none; }
+}

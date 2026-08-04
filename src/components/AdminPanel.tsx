@@ -323,6 +323,10 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
             <span>Màn hình kết quả</span>
           </Link>
+          <Link to="/final-awards" target="_blank" rel="noreferrer" className="admin-results-link">
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            <span>Trao giải chung cuộc</span>
+          </Link>
           <button type="button" onClick={onSignOut} className="admin-signout" aria-label="Đăng xuất">
             <LogOut className="h-4 w-4" aria-hidden="true" />
             <span>Đăng xuất</span>

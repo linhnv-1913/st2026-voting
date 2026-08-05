@@ -25,7 +25,7 @@ test('awards dense vote ranks and points', () => {
   );
 });
 
-test('combines Team Building and vote points with dense final ranking', () => {
+test('assigns final awards as 2-1-3-3 in visual podium order', () => {
   const leaderboard = createFinalLeaderboard(results, {
     hub1: 100,
     hub2: 90,
@@ -39,8 +39,13 @@ test('combines Team Building and vote points with dense final ranking', () => {
       { hubId: 'hub4', totalScore: 140, finalRank: 1 },
       { hubId: 'hub1', totalScore: 140, finalRank: 2 },
       { hubId: 'hub2', totalScore: 130, finalRank: 3 },
-      { hubId: 'hub5', totalScore: 120, finalRank: 4 },
+      { hubId: 'hub5', totalScore: 120, finalRank: 3 },
     ],
+  );
+  assert.deepEqual(
+    [leaderboard[1], leaderboard[0], leaderboard[2], leaderboard[3]]
+      .map((entry) => entry.finalRank),
+    [2, 1, 3, 3],
   );
 });
 

@@ -30,6 +30,9 @@ const POINTS_BY_RANK: Readonly<Record<number, number>> = {
   4: 10,
 };
 
+// Slot 2 renders left of slot 1, so visual order is 2-1-3-3.
+const FINAL_AWARD_RANKS = [1, 2, 3, 3] as const;
+
 function getPointsForRank(rank: number | null): number {
   return rank === null ? 0 : POINTS_BY_RANK[rank] ?? 0;
 }
@@ -117,30 +120,10 @@ export function createFinalLeaderboard(
     return HUB_DEFINITIONS.findIndex((hub) => hub.id === first.hubId)
       - HUB_DEFINITIONS.findIndex((hub) => hub.id === second.hubId);
   };
-  const finalRanks = new Map<HubId, number | null>();
-
-  if (!hasScore) {
-    entries.forEach((entry) => finalRanks.set(entry.hubId, null));
-  } else {
-    let rank = 0;
-    let previousTotal: number | undefined;
-    let previousTeamBuilding: number | undefined;
-
-    [...entries].sort(compareEntries).forEach((entry) => {
-      if (entry.totalScore !== previousTotal
-        || entry.teamBuildingScore !== previousTeamBuilding) {
-        rank += 1;
-        previousTotal = entry.totalScore;
-        previousTeamBuilding = entry.teamBuildingScore;
-      }
-      finalRanks.set(entry.hubId, rank);
-    });
-  }
-
-  return entries
-    .map((entry) => ({
+  return [...entries]
+    .sort(compareEntries)
+    .map((entry, index) => ({
       ...entry,
-      finalRank: finalRanks.get(entry.hubId) ?? null,
-    }))
-    .sort(compareEntries);
+      finalRank: hasScore ? FINAL_AWARD_RANKS[index] ?? null : null,
+    }));
 }

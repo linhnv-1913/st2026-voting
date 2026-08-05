@@ -92,13 +92,10 @@
     border-radius: 18px;
   }
 
-  .final-awards__item--slot-1,
-  .final-awards__item--slot-2,
-  .final-awards__item--slot-3,
-  .final-awards__item--slot-4 {
-    grid-column: auto;
-    grid-row: auto;
-  }
+  .final-awards__item--slot-1 { grid-column: 2; grid-row: 1; }
+  .final-awards__item--slot-2 { grid-column: 1; grid-row: 1; }
+  .final-awards__item--slot-3 { grid-column: 1; grid-row: 2; }
+  .final-awards__item--slot-4 { grid-column: 2; grid-row: 2; }
 
   .final-awards__panel { --award-offset: 0px; padding-top: 31px; }
   .final-awards__medal { width: clamp(50px, 15vw, 70px); }

@@ -196,7 +196,8 @@
   position: absolute;
   z-index: 4;
   top: 0;
-  left: 50%;
+  /* The C3 seal in the artwork sits slightly left of the image center. */
+  left: 47.2%;
   display: grid;
   width: clamp(44px, 5.8vw, 88px);
   aspect-ratio: 1;

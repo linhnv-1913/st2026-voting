@@ -52,13 +52,17 @@
   .final-awards { padding-top: 14px; padding-bottom: 18px; }
   .final-awards__header { margin-bottom: 15px; }
   .final-awards__header h1 { font-size: clamp(2.6rem, 7.8vh, 4rem); }
-  .final-awards__podium { width: min(1260px, 100%); padding: 15px; }
+  .final-awards__podium { width: min(1320px, calc(100% + 24px)); padding: 15px; }
   .final-awards__panel { padding-top: 42px; }
   .final-awards__panel--rank-1 { --award-offset: -24px; }
   .final-awards__panel--rank-2 { --award-offset: -10px; }
   .final-awards__score-plate { padding-top: 10px; padding-bottom: 10px; }
-  .final-awards__score-plate strong { font-size: clamp(1.5rem, 5.7vh, 2.8rem); }
+  .final-awards__score-plate strong { font-size: clamp(1.5rem, 6vh, 2.9rem); }
   .final-awards__ribbon { margin-top: 13px; padding-top: 7px; padding-bottom: 7px; }
+}
+
+@media (min-width: 1200px) and (max-height: 800px) {
+  .final-awards__artwork { aspect-ratio: 1.05; }
 }
 
 @media (max-width: 760px) {

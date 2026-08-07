@@ -1,8 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { VOTE_ACCESS_CODES } from "../vote-access";
 import "./results-qr-dialog.css";
-
-const RESULTS_QR_URL = "https://sal.vn/c3-voting";
 
 interface ResultsQrDialogProps {
   open: boolean;
@@ -43,6 +42,12 @@ export function ResultsQrDialog({
     return () => dialog.removeEventListener("close", handleClose);
   }, [onClose, triggerRef]);
 
+  const voteBasePath = import.meta.env.BASE_URL.endsWith("/")
+    ? import.meta.env.BASE_URL
+    : `${import.meta.env.BASE_URL}/`;
+  const getVoteUrl = (code: string) =>
+    `${window.location.origin}${voteBasePath}${code}`;
+
   return (
     <dialog
       ref={dialogRef}
@@ -53,17 +58,17 @@ export function ResultsQrDialog({
       }}
     >
       <section className="results-qr-dialog__sheet">
-        <p className="results-qr-dialog__eyebrow">Mã QR vào trang bình chọn</p>
+        <p className="results-qr-dialog__eyebrow">16 mã QR vào trang bình chọn</p>
         <h2 id="results-qr-title" className="results-qr-dialog__title">
-          https://sal.vn/c3-voting
+          Mỗi mã nhận tối đa 10 lượt vote
         </h2>
-        <div className="results-qr-dialog__code">
-          <QRCodeSVG
-            value={RESULTS_QR_URL}
-            size={360}
-            includeMargin
-            level="M"
-          />
+        <div className="results-qr-dialog__grid">
+          {VOTE_ACCESS_CODES.map(code => (
+            <article key={code} className="results-qr-dialog__item">
+              <QRCodeSVG value={getVoteUrl(code)} size={160} includeMargin level="M" />
+              <code>{code}</code>
+            </article>
+          ))}
         </div>
         <button
           ref={closeButtonRef}

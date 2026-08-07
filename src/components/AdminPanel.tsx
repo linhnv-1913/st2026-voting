@@ -3,8 +3,11 @@ import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, writeBatch } from
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Link } from 'react-router-dom';
 import { auth, db } from '../firebase';
-import { Config, Vote, Option } from '../types';
-import { normalizeHubOptions } from '../hubOptions';
+import { Config, Vote, Option, VoteAccessLink } from '../types';
+import { getHubResultBarClass, normalizeHubOptions } from '../hubOptions';
+import { calculateEndTime, DEFAULT_DURATION_MINUTES, isValidDurationMinutes } from '../poll-schedule';
+import { normalizeVoteAccessLink, VOTE_ACCESS_CODES, VOTE_ACCESS_COLLECTION } from '../vote-access';
+import { ensureVoteAccessLinks, getRemainingVotes } from '../vote-access-service';
 import { ExternalLink, Loader2, Plus, Trash2, LogOut } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FestivalBrand, MatsuriShell } from './MatsuriShell';
@@ -179,9 +182,13 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
   // Form state
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<Option[]>([{ id: 'opt_1', text: '' }, { id: 'opt_2', text: '' }]);
-  const [endTimeInput, setEndTimeInput] = useState('');
+  const [startTimeInput, setStartTimeInput] = useState('');
+  const [durationMinutesInput, setDurationMinutesInput] = useState(String(DEFAULT_DURATION_MINUTES));
   const [isSaving, setIsSaving] = useState(false);
   const [isResettingVotes, setIsResettingVotes] = useState(false);
+  const [voteAccessLinks, setVoteAccessLinks] = useState<VoteAccessLink[]>([]);
+  const [isSeedingVoteLinks, setIsSeedingVoteLinks] = useState(false);
+  const [voteAccessError, setVoteAccessError] = useState('');
 
   const formatDateTimeLocal = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -193,11 +200,21 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
     const unsubConfig = onSnapshot(doc(db, 'config', 'main'), (snap) => {
       if (snap.exists()) {
         const sourceData = snap.data() as Config;
-        const data = { ...sourceData, options: normalizeHubOptions(sourceData.options || []) } as Config;
+        const data = {
+          ...sourceData,
+          options: normalizeHubOptions(sourceData.options || []),
+          startTime: sourceData.startTime ?? null,
+          durationMinutes: sourceData.durationMinutes ?? DEFAULT_DURATION_MINUTES,
+        } as Config;
         setConfig(data);
         setQuestion(data.question);
         setOptions(data.options);
-        setEndTimeInput(data.endTime ? formatDateTimeLocal(data.endTime) : '');
+        setStartTimeInput(data.startTime != null ? formatDateTimeLocal(data.startTime) : '');
+        setDurationMinutesInput(
+          data.durationMinutes != null
+            ? String(data.durationMinutes)
+            : String(DEFAULT_DURATION_MINUTES),
+        );
       }
       setLoading(false);
     });
@@ -207,12 +224,40 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
       snap.forEach(d => vts.push({ id: d.id, ...d.data() } as Vote));
       setVotes(vts);
     });
+    const unsubVoteAccessLinks = onSnapshot(collection(db, VOTE_ACCESS_COLLECTION), (snap) => {
+      setVoteAccessLinks(
+        snap.docs
+          .map(document => normalizeVoteAccessLink(document.id, document.data()))
+          .filter((link): link is VoteAccessLink => link !== null)
+          .sort((left, right) => left.id.localeCompare(right.id)),
+      );
+    }, (error) => {
+      console.error('Failed to load vote access links', error);
+      setVoteAccessError('Chưa thể tải quota của 16 link vote.');
+    });
 
     return () => {
       unsubConfig();
       unsubVotes();
+      unsubVoteAccessLinks();
     };
   }, []);
+
+  const handleSeedVoteLinks = async () => {
+    setIsSeedingVoteLinks(true);
+    setVoteAccessError('');
+    try {
+      const createdCount = await ensureVoteAccessLinks(db);
+      alert(createdCount > 0
+        ? `Đã lưu ${createdCount} mã vote còn thiếu vào DB.`
+        : '16 mã vote đã có sẵn trong DB.');
+    } catch (error) {
+      console.error(error);
+      setVoteAccessError('Không thể khởi tạo 16 mã. Hãy kiểm tra quyền admin và Firestore Rules.');
+    } finally {
+      setIsSeedingVoteLinks(false);
+    }
+  };
 
   const handleSaveConfig = async (isActive: boolean) => {
     setIsSaving(true);
@@ -229,12 +274,27 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
         return;
       }
 
-      const endTime = endTimeInput ? new Date(endTimeInput).getTime() : null;
-      if (endTimeInput && Number.isNaN(endTime)) {
-        alert('Thời điểm đóng poll không hợp lệ.');
+      const startTime = startTimeInput ? new Date(startTimeInput).getTime() : null;
+      const durationMinutes = durationMinutesInput.trim()
+        ? Number(durationMinutesInput)
+        : null;
+      if (startTimeInput && (startTime === null || Number.isNaN(startTime))) {
+        alert('Thời điểm bắt đầu poll không hợp lệ.');
         return;
       }
-      if (isActive && endTime && endTime <= Date.now()) {
+      if (durationMinutes === null || !isValidDurationMinutes(durationMinutes)) {
+        alert('Thời lượng mở vote phải là số phút nguyên dương.');
+        return;
+      }
+      if (isActive && startTime === null) {
+        alert('Vui lòng nhập thời điểm bắt đầu poll.');
+        return;
+      }
+
+      const endTime = startTime === null
+        ? config?.endTime ?? null
+        : calculateEndTime(startTime, durationMinutes);
+      if (isActive && endTime !== null && endTime <= Date.now()) {
         alert('Thời điểm đóng phải ở tương lai khi bắt đầu poll.');
         return;
       }
@@ -243,6 +303,8 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
         question: question || 'Untitled Poll',
         options: filteredOptions,
         isActive,
+        startTime,
+        durationMinutes,
         endTime
       });
     } catch (e) {
@@ -268,13 +330,18 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
   };
 
   const handleResetVotes = async () => {
+    if (config?.isActive) {
+      alert('Vui lòng dừng poll trước khi xóa và đặt lại quota vote.');
+      return;
+    }
     if (!window.confirm('Xóa toàn bộ phiếu hiện có? Thao tác này không thể hoàn tác.')) return;
 
     setIsResettingVotes(true);
     try {
-      const [voteSnapshot, claimSnapshot] = await Promise.all([
+      const [voteSnapshot, claimSnapshot, voteAccessSnapshot] = await Promise.all([
         getDocs(collection(db, 'votes')),
         getDocs(collection(db, 'voter-claims')),
+        getDocs(collection(db, VOTE_ACCESS_COLLECTION)),
       ]);
       const documentsToDelete = [
         ...voteSnapshot.docs,
@@ -285,6 +352,13 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
         documentsToDelete
           .slice(index, index + 500)
           .forEach(document => batch.delete(document.ref));
+        await batch.commit();
+      }
+      for (let index = 0; index < voteAccessSnapshot.docs.length; index += 500) {
+        const batch = writeBatch(db);
+        voteAccessSnapshot.docs
+          .slice(index, index + 500)
+          .forEach(document => batch.update(document.ref, { voteCount: 0 }));
         await batch.commit();
       }
     } catch (error) {
@@ -310,6 +384,11 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
   });
 
   const totalVotes = votes.length;
+  const hasVotesToReset = votes.length > 0 || voteAccessLinks.some(link => link.voteCount > 0);
+  const voteBasePath = import.meta.env.BASE_URL.endsWith('/')
+    ? import.meta.env.BASE_URL
+    : `${import.meta.env.BASE_URL}/`;
+  const getVoteAccessUrl = (code: string) => `${window.location.origin}${voteBasePath}${code}`;
 
   return (
     <div className="admin-shell">
@@ -353,14 +432,27 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase">Tự đóng poll (tuỳ chọn)</label>
+                <label className="text-xs font-bold text-slate-500 uppercase">Thời điểm bắt đầu vote</label>
                 <input
                   type="datetime-local"
-                  value={endTimeInput}
-                  onChange={event => setEndTimeInput(event.target.value)}
+                  value={startTimeInput}
+                  onChange={event => setStartTimeInput(event.target.value)}
                   className="festival-input"
                 />
-                <p className="text-xs text-slate-400">Để trống nếu muốn quản trị viên tự dừng poll.</p>
+                <p className="text-xs text-slate-400">Admin chọn thời điểm form bắt đầu nhận phiếu.</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase">Thời lượng mở vote (phút)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={durationMinutesInput}
+                  onChange={event => setDurationMinutesInput(event.target.value)}
+                  className="festival-input"
+                />
+                <p className="text-xs text-slate-400">Thời điểm đóng được tính bằng thời điểm bắt đầu cộng số phút này.</p>
               </div>
 
               <div className="space-y-2">
@@ -399,7 +491,7 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
               <div className="admin-actions pt-6 border-t-2 border-slate-100">
                 <button
                   onClick={handleResetVotes}
-                  disabled={isSaving || isResettingVotes || votes.length === 0}
+                  disabled={isSaving || isResettingVotes || !hasVotesToReset}
                   className="px-4 py-3 border-2 border-red-200 bg-red-50 text-red-700 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
                 >
                   {isResettingVotes ? 'Đang xóa...' : 'Xóa phiếu'}
@@ -433,15 +525,55 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
             </div>
           </section>
 
+          <section className="admin-card">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="admin-section-title">16 link bình chọn</h2>
+                <p className="text-sm text-slate-500">
+                  Mỗi link tối đa 10 lượt, tổng công suất là 160 lượt vote.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSeedVoteLinks}
+                disabled={isSeedingVoteLinks}
+                className="shrink-0 rounded-xl bg-sky-500 px-4 py-3 text-sm font-bold text-white shadow-md shadow-sky-500/20 transition-colors hover:bg-sky-600 disabled:opacity-50"
+              >
+                {isSeedingVoteLinks ? 'Đang lưu...' : 'Lưu 16 mã vào DB'}
+              </button>
+            </div>
+            {voteAccessError && <p className="festival-alert mt-4" role="alert">{voteAccessError}</p>}
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {VOTE_ACCESS_CODES.map(code => {
+                const accessLink = voteAccessLinks.find(link => link.id === code);
+                const used = accessLink?.voteCount ?? 0;
+                const max = accessLink?.maxVotes ?? 10;
+                return (
+                  <a
+                    key={code}
+                    href={getVoteAccessUrl(code)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition-colors hover:border-sky-300 hover:bg-sky-50"
+                  >
+                    <span className="block font-mono text-xs font-bold text-slate-700">{code}</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      {accessLink ? `${used}/${max} lượt đã dùng • còn ${getRemainingVotes(accessLink)}` : 'Chưa có trong DB'}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+
           {/* Results Panel */}
           <div className="admin-results-stack">
             <TeamBuildingScoreEditor />
             <section className="admin-card">
               <h2 className="admin-section-title">Kết quả hiện tại</h2>
               <div className="space-y-5">
-                {chartData.map((data, idx) => {
+                {chartData.map((data) => {
                   const percentage = totalVotes > 0 ? Math.round((data.votes / totalVotes) * 100) : 0;
-                  const barColor = idx === 0 ? 'bg-red-600' : (idx === 1 ? 'bg-sky-500' : (idx === 2 ? 'bg-amber-400' : 'bg-blue-800'));
                   return (
                     <div key={data.id}>
                       <div className="flex justify-between text-sm mb-2">
@@ -453,7 +585,7 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
                           initial={{ width: 0 }}
                           animate={{ width: `${percentage}%` }}
                           transition={{ duration: 0.5, ease: "easeOut" }}
-                          className={`h-full ${barColor}`} 
+                          className={`h-full results-bar ${getHubResultBarClass(data.name)}`}
                         />
                       </div>
                     </div>
@@ -466,7 +598,7 @@ function AdminDashboard({ onSignOut }: { onSignOut: () => void }) {
               <div>
                 <div className="admin-stat__number">{totalVotes}</div>
                 <div className="admin-stat__label">Tổng lượt bình chọn</div>
-              <div className={`mt-6 py-1.5 px-4 text-xs font-black rounded-full uppercase tracking-widest shadow-sm ${config?.isActive ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                <div className={`mt-6 py-1.5 px-4 text-xs font-black rounded-full uppercase tracking-widest shadow-sm ${config?.isActive ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
                   {config?.isActive ? '● Poll đang mở' : 'Poll đã đóng'}
                 </div>
               </div>

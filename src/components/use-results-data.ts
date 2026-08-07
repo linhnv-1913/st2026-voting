@@ -101,19 +101,22 @@ export function useResultsData(accessState: ResultsAccessState) {
   }, [accessState]);
 
   useEffect(() => {
-    if (!config?.endTime) return;
+    const startTime = config?.startTime ?? null;
+    const endTime = config?.endTime ?? null;
+    if (startTime === null && endTime === null) return;
     setNow(Date.now());
-    if (config.endTime <= Date.now()) return;
 
     const timerId = window.setInterval(() => {
       const currentTime = Date.now();
       setNow(currentTime);
-      if (currentTime >= config.endTime!) window.clearInterval(timerId);
+      const beforeStart = startTime !== null && currentTime < startTime;
+      const beforeEnd = endTime !== null && currentTime < endTime;
+      if (!beforeStart && !beforeEnd) window.clearInterval(timerId);
     }, 1_000);
     return () => window.clearInterval(timerId);
-  }, [config?.endTime]);
+  }, [config?.startTime, config?.endTime]);
 
-  const countdown = getCountdownState(config?.endTime, now);
+  const countdown = getCountdownState(config?.endTime, now, config?.startTime);
   const serverReady = Object.values(loaded).every(Boolean);
   const preliminaryChartData = useMemo(() => (config?.options || []).map((option) => ({
     ...option,

@@ -318,3 +318,57 @@
   background: #fffaf0;
   box-shadow: 0 14px 36px rgba(5, 57, 94, 0.18);
 }
+
+/* LED landscape mode: enlarge the four award panels across the 2:1 canvas
+   while keeping their artwork and score plates inside the viewport height. */
+@media (min-width: 1440px) and (min-aspect-ratio: 1.85 / 1) {
+  .final-awards {
+    padding: clamp(18px, 2.4vh, 42px) clamp(26px, 3vw, 72px)
+      clamp(24px, 3vh, 46px);
+  }
+
+  .final-awards__header {
+    margin-bottom: clamp(18px, 2.4vh, 34px);
+  }
+
+  .final-awards__header p {
+    padding: 7px 20px;
+    font-size: clamp(0.7rem, 1vw, 1rem);
+  }
+
+  .final-awards__header h1 {
+    font-size: clamp(3.6rem, min(8vw, 10vh), 9rem);
+  }
+
+  .final-awards__podium {
+    width: 92vw;
+    max-width: 2400px;
+    gap: clamp(10px, 1vw, 24px);
+    padding: clamp(18px, 1.5vw, 32px);
+  }
+
+  .final-awards__panel {
+    padding-top: clamp(38px, 4.4vw, 78px);
+  }
+
+  .final-awards__medal {
+    width: clamp(64px, 6vw, 112px);
+  }
+
+  .final-awards__medal strong {
+    font-size: clamp(1.8rem, 2.8vw, 3.4rem);
+  }
+
+  .final-awards__artwork {
+    aspect-ratio: 1.12;
+  }
+
+  .final-awards__score-plate strong {
+    font-size: clamp(2rem, 4.4vw, 4.8rem);
+  }
+
+  .final-awards__ribbon {
+    width: min(1000px, 78%);
+    font-size: clamp(0.72rem, 1.25vw, 1.2rem);
+  }
+}

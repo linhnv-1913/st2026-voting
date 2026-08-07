@@ -27,13 +27,23 @@ export function ResultsSummary({
           <strong className="results-total">{totalVotes}</strong>
           <span className="results-total__label">Tổng lượt bình chọn</span>
           <span className={`results-poll-status ${isLive ? 'results-poll-status--live' : ''}`}>
-            {isLive ? 'Poll đang mở' : 'Poll đã đóng'}
+            {isLive
+              ? 'Poll đang mở'
+              : countdown.isBeforeStart
+                ? 'Poll chưa mở'
+                : 'Poll đã đóng'}
           </span>
         </div>
 
         {countdown.hasDeadline ? (
           <section className={`results-countdown ${countdown.isExpired ? 'results-countdown--expired' : ''}`} aria-label={countdown.label}>
-            <p className="results-countdown__label">{countdown.isExpired ? 'Đã hết giờ bình chọn' : 'Thời gian còn lại'}</p>
+            <p className="results-countdown__label">
+              {countdown.isBeforeStart
+                ? 'Bắt đầu sau'
+                : countdown.isExpired
+                  ? 'Đã hết giờ bình chọn'
+                  : 'Thời gian còn lại'}
+            </p>
             <div className="results-countdown__grid">
               {countdown.parts.map(part => (
                 <div key={part.label} className="results-countdown__tile">

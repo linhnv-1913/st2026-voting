@@ -51,8 +51,8 @@
 }
 
 .team-score-editor__field--hub2 { --score-color: #e8780b; }
-.team-score-editor__field--hub4 { --score-color: #159052; }
-.team-score-editor__field--hub5 { --score-color: #1875bf; }
+.team-score-editor__field--hub4 { --score-color: var(--hub-4-primary); }
+.team-score-editor__field--hub5 { --score-color: var(--hub-5-primary); }
 
 .team-score-editor__field span {
   color: var(--score-color);

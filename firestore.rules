@@ -17,13 +17,27 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    function isValidUsername(username) {
-      return username is string && username.size() <= 128 &&
-             username.matches('^[a-z0-9]+([._\\-][a-z0-9]+)*$');
+    function voteDocumentId(uid, accessCode) {
+      return 'vote_' + uid + '_' + accessCode;
     }
 
-    function voteDocumentId(uid) {
-      return 'vote_' + uid;
+    function isAllowedVoteAccessCode(accessCode) {
+      return accessCode == '7f3k9m2q8x1a' ||
+             accessCode == 'c4n8v2p6r9tz' ||
+             accessCode == 'm8q1x5k7d3wj' ||
+             accessCode == 'p2z9r4v6n8cf' ||
+             accessCode == 'x7d3k9m1q5vb' ||
+             accessCode == 'r6n2c8z4p7kt' ||
+             accessCode == 'k9v5x1m3d8qw' ||
+             accessCode == 't4p7r2n9c6xz' ||
+             accessCode == 'v1m8q3k6d9rf' ||
+             accessCode == 'z5c2x7p4n8kt' ||
+             accessCode == 'd8r1v6m9q3xp' ||
+             accessCode == 'n3k7t2z8c5vw' ||
+             accessCode == 'q6x4p9r1m7dk' ||
+             accessCode == 'c9v2n5z7t3qm' ||
+             accessCode == 'm4d8x1k6r9vp' ||
+             accessCode == 't7q3c9n2z5rx';
     }
 
     function incoming() {
@@ -40,7 +54,19 @@ service cloud.firestore {
              data.question is string && data.question.size() <= 200 &&
              data.options is list && data.options.size() <= 4 &&
              data.isActive is bool &&
-             (data.endTime == null || data.endTime is number);
+             (data.endTime == null || data.endTime is number) &&
+             isValidSchedule(data);
+    }
+
+    // Keep legacy documents valid until an admin saves the new schedule fields.
+    function isValidSchedule(data) {
+      return !data.keys().hasAny(['startTime', 'durationMinutes']) ||
+             (data.keys().hasAll(['startTime', 'durationMinutes']) &&
+              (data.startTime == null || data.startTime is int) &&
+              (data.durationMinutes == null ||
+               (data.durationMinutes is int && data.durationMinutes > 0)) &&
+              (data.startTime == null || data.durationMinutes == null ||
+               data.endTime == data.startTime + data.durationMinutes * 60000));
     }
 
     match /config/{configId} {
@@ -50,16 +76,31 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Each bearer link has its own atomic quota. Public clients may read one
+    // known link, but only admins may enumerate or provision the collection.
+    match /vote-links/{accessCode} {
+      allow get: if isAllowedVoteAccessCode(accessCode);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidVoteAccessLink(incoming(), accessCode);
+      allow delete: if isAdmin();
+      allow update: if (isAdmin() && isValidVoteAccessLink(incoming(), accessCode)) ||
+                    isValidVoteAccessIncrement(accessCode);
+    }
+
     // Vote Rules
     function isPollOpen() {
       let poll = get(/databases/$(database)/documents/config/main).data;
       return poll.isActive == true &&
-             (poll.endTime == null || request.time.toMillis() <= poll.endTime);
+             (!poll.keys().hasAny(['startTime']) ||
+              poll.startTime == null || request.time.toMillis() >= poll.startTime) &&
+             (poll.endTime == null || request.time.toMillis() < poll.endTime);
     }
 
     function isValidVote(data) {
-      return data.keys().hasOnly(['optionIds', 'username', 'userId', 'timestamp']) &&
-             data.keys().hasAll(['optionIds', 'username', 'userId', 'timestamp']) &&
+      return data.keys().hasOnly(['accessCode', 'optionIds', 'userId', 'timestamp']) &&
+             data.keys().hasAll(['accessCode', 'optionIds', 'userId', 'timestamp']) &&
+             data.accessCode is string &&
+             isAllowedVoteAccessCode(data.accessCode) &&
              data.optionIds is list && data.optionIds.size() == 3 &&
              data.optionIds[0] is string && data.optionIds[0].size() <= 50 &&
              data.optionIds[1] is string && data.optionIds[1].size() <= 50 &&
@@ -67,38 +108,61 @@ service cloud.firestore {
              data.optionIds[0] != data.optionIds[1] &&
              data.optionIds[0] != data.optionIds[2] &&
              data.optionIds[1] != data.optionIds[2] &&
-             isValidUsername(data.username) &&
              data.userId == request.auth.uid &&
-             data.timestamp is number &&
-             getAfter(/databases/$(database)/documents/voter-claims/$(data.username)).data.userId == request.auth.uid;
+             data.timestamp is number;
     }
 
-    function isValidVoterClaim(data, username) {
-      return data.keys().hasOnly(['username', 'userId', 'timestamp']) &&
-             data.keys().hasAll(['username', 'userId', 'timestamp']) &&
-             data.username == username &&
-             isValidUsername(username) &&
-             data.userId == request.auth.uid &&
-             data.timestamp is number &&
-             getAfter(/databases/$(database)/documents/votes/$(voteDocumentId(request.auth.uid))).data.username == username &&
-             getAfter(/databases/$(database)/documents/votes/$(voteDocumentId(request.auth.uid))).data.userId == request.auth.uid;
+    function isValidVoteAccessLink(data, accessCode) {
+      return isAllowedVoteAccessCode(accessCode) &&
+             data.keys().hasOnly(['voteCount', 'maxVotes', 'isActive']) &&
+             data.keys().hasAll(['voteCount', 'maxVotes', 'isActive']) &&
+             data.voteCount is int && data.voteCount >= 0 &&
+             data.maxVotes == 10 &&
+             data.voteCount <= data.maxVotes &&
+             data.isActive is bool;
+    }
+
+    function isValidVoteAccessIncrement(accessCode) {
+      let voteId = voteDocumentId(request.auth.uid, accessCode);
+      return isSignedIn() &&
+             isValidVoteAccessLink(existing(), accessCode) &&
+             isValidVoteAccessLink(incoming(), accessCode) &&
+             existing().isActive == true &&
+             incoming().isActive == true &&
+             incoming().diff(existing()).affectedKeys().hasOnly(['voteCount']) &&
+             incoming().voteCount == existing().voteCount + 1 &&
+             !exists(/databases/$(database)/documents/votes/$(voteId)) &&
+             existsAfter(/databases/$(database)/documents/votes/$(voteId)) &&
+             getAfter(/databases/$(database)/documents/votes/$(voteId)).data.accessCode == accessCode &&
+             getAfter(/databases/$(database)/documents/votes/$(voteId)).data.userId == request.auth.uid;
+    }
+
+    function canReadOwnVote(voteId) {
+      return isSignedIn() &&
+             (!exists(/databases/$(database)/documents/votes/$(voteId)) ||
+              (resource.data.keys().hasAll(['accessCode', 'userId']) &&
+               isAllowedVoteAccessCode(resource.data.accessCode) &&
+               resource.data.userId == request.auth.uid &&
+               voteId == voteDocumentId(request.auth.uid, resource.data.accessCode)));
     }
 
     match /voter-claims/{username} {
-      // The user needs a point lookup to show the "already voted" error.
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
-      allow create: if isSignedIn() && isValidVoterClaim(incoming(), username) && isPollOpen();
-      allow update: if false;
-      allow delete: if isAdmin();
+      // Keep historical claims readable/deletable by admins during migration.
+      allow get, list, delete: if isAdmin();
+      allow create, update: if false;
     }
 
     match /votes/{voteId} {
-      allow get: if isAdmin() || (isSignedIn() && voteId == voteDocumentId(request.auth.uid));
+      allow get: if isAdmin() || canReadOwnVote(voteId);
       allow list: if isAdmin();
-      // The username claim and this immutable UID vote must be created atomically.
+      // The vote and its access-link counter must be created atomically.
       allow create: if isSignedIn() && isValidId(voteId) && isValidVote(incoming()) &&
-                    voteId == voteDocumentId(request.auth.uid) && isPollOpen();
+                    voteId == voteDocumentId(request.auth.uid, incoming().accessCode) &&
+                    isPollOpen() &&
+                    !exists(/databases/$(database)/documents/votes/$(voteId)) &&
+                    exists(/databases/$(database)/documents/vote-links/$(incoming().accessCode)) &&
+                    getAfter(/databases/$(database)/documents/vote-links/$(incoming().accessCode)).data.voteCount ==
+                      get(/databases/$(database)/documents/vote-links/$(incoming().accessCode)).data.voteCount + 1;
       allow update: if false;
       allow delete: if isAdmin();
     }

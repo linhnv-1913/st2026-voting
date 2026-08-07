@@ -17,6 +17,8 @@ export interface Config {
   question: string;
   options: Option[];
   isActive: boolean;
+  startTime?: number | null;
+  durationMinutes?: number | null;
   endTime: number | null;
 }
 
@@ -24,7 +26,15 @@ export interface Vote {
   id: string;
   optionId?: string; // Kept for backward compatibility
   optionIds?: string[]; // Supporting 3 selections
+  accessCode?: string;
   username?: string;
   userId: string;
   timestamp: number;
+}
+
+export interface VoteAccessLink {
+  id: string;
+  voteCount: number;
+  maxVotes: number;
+  isActive: boolean;
 }

@@ -57,7 +57,8 @@ export function ResultsDisplay() {
     );
   }
 
-  const isLive = !!config?.isActive && !countdown.isExpired;
+  const isLive =
+    !!config?.isActive && !countdown.isExpired && !countdown.isBeforeStart;
 
   return (
     <main className="results-screen">

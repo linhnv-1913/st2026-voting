@@ -8,7 +8,9 @@
         "question": { "type": "string", "maxLength": 200 },
         "options": { "type": "array" },
         "isActive": { "type": "boolean" },
-        "endTime": { "type": "integer" }
+        "startTime": { "type": ["integer", "null"] },
+        "durationMinutes": { "type": ["integer", "null"] },
+        "endTime": { "type": ["integer", "null"] }
       },
       "required": ["question", "options", "isActive"]
     },
@@ -17,12 +19,23 @@
       "description": "User vote",
       "type": "object",
       "properties": {
+        "accessCode": { "type": "string", "maxLength": 12 },
         "optionIds": { "type": "array", "minItems": 3, "maxItems": 3 },
-        "username": { "type": "string", "maxLength": 128 },
         "userId": { "type": "string", "maxLength": 128 },
         "timestamp": { "type": "integer" }
       },
-      "required": ["optionIds", "username", "userId", "timestamp"]
+      "required": ["accessCode", "optionIds", "userId", "timestamp"]
+    },
+    "VoteAccessLink": {
+      "title": "Vote access link",
+      "description": "Bearer link with an atomic vote quota",
+      "type": "object",
+      "properties": {
+        "voteCount": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "maxVotes": { "type": "integer", "const": 10 },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["voteCount", "maxVotes", "isActive"]
     },
     "Admin": {
       "title": "Admin",
@@ -42,6 +55,10 @@
     "votes/{voteId}": {
       "schema": { "$ref": "#/entities/Vote" },
       "description": "User votes"
+    },
+    "vote-links/{accessCode}": {
+      "schema": { "$ref": "#/entities/VoteAccessLink" },
+      "description": "One of the 16 vote access links and its 10-vote quota"
     },
     "admins/{adminId}": {
       "schema": { "$ref": "#/entities/Admin" },

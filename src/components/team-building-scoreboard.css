@@ -90,8 +90,8 @@
 
 .team-building-scoreboard__tile--hub1 { --hub-start: #fff4f8; --hub-end: #ffdbe8; --hub-accent: #d63d75; --hub-ink: #7a1e45; --hub-border: #ef9bb9; --hub-shadow: rgba(185, 37, 91, 0.17); }
 .team-building-scoreboard__tile--hub2 { --hub-start: #fff8e9; --hub-end: #ffe0ab; --hub-accent: #d97008; --hub-ink: #783b00; --hub-border: #efb45f; --hub-shadow: rgba(183, 93, 5, 0.17); }
-.team-building-scoreboard__tile--hub4 { --hub-start: #effbf5; --hub-end: #c5ead8; --hub-accent: #23855b; --hub-ink: #12583e; --hub-border: #80c6a8; --hub-shadow: rgba(27, 112, 76, 0.16); }
-.team-building-scoreboard__tile--hub5 { --hub-start: #f0f8ff; --hub-end: #c9e3f8; --hub-accent: #2374b9; --hub-ink: #154f80; --hub-border: #82b9e4; --hub-shadow: rgba(24, 97, 160, 0.16); }
+.team-building-scoreboard__tile--hub4 { --hub-start: var(--hub-4-surface-start); --hub-end: var(--hub-4-surface-end); --hub-accent: var(--hub-4-primary); --hub-ink: var(--hub-4-ink); --hub-border: var(--hub-4-border); --hub-shadow: var(--hub-4-shadow); }
+.team-building-scoreboard__tile--hub5 { --hub-start: var(--hub-5-surface-start); --hub-end: var(--hub-5-surface-end); --hub-accent: var(--hub-5-primary); --hub-ink: var(--hub-5-ink); --hub-border: var(--hub-5-border); --hub-shadow: var(--hub-5-shadow); }
 
 .team-building-scoreboard__label {
   display: block; width: fit-content; padding: 0; color: var(--hub-ink);
@@ -130,4 +130,71 @@
   .team-building-scoreboard__grid { gap: 10px; }
   .team-building-scoreboard__tile { min-height: 156px; padding: 16px; }
   .team-building-scoreboard__value-text { font-size: clamp(2.25rem, 12vw, 3rem); }
+}
+
+/* LED landscape mode: keep the four Hub scores large and spread across the
+   2:1 canvas instead of leaving a narrow desktop-sized card in the middle. */
+@media (min-width: 1440px) and (min-aspect-ratio: 1.85 / 1) {
+  .matsuri-shell .team-building-scoreboard-stage {
+    width: 100%;
+    padding: clamp(28px, 3vw, 60px) clamp(36px, 4vw, 84px);
+  }
+
+  .matsuri-shell .team-building-scoreboard {
+    width: 92vw;
+    max-width: none;
+    padding: clamp(36px, 3vw, 68px);
+    border-radius: clamp(26px, 2vw, 38px);
+  }
+
+  .team-building-scoreboard__header {
+    margin-bottom: clamp(30px, 3vh, 46px);
+  }
+
+  .team-building-scoreboard .festival-brand {
+    margin-bottom: clamp(24px, 2.5vh, 34px);
+  }
+
+  .team-building-scoreboard .festival-brand__seal {
+    width: clamp(50px, 4.2vw, 78px);
+    height: clamp(50px, 4.2vw, 78px);
+  }
+
+  .team-building-scoreboard .festival-brand__copy strong {
+    font-size: clamp(1.12rem, 1.5vw, 1.7rem);
+  }
+
+  .team-building-scoreboard .festival-brand__copy small {
+    font-size: clamp(0.64rem, 0.8vw, 0.9rem);
+  }
+
+  .team-building-scoreboard__status {
+    margin-bottom: clamp(24px, 2.2vw, 36px);
+    padding: 16px 20px;
+    font-size: clamp(0.9rem, 1.05vw, 1.2rem);
+  }
+
+  .team-building-scoreboard__grid {
+    gap: clamp(22px, 2.2vw, 42px);
+  }
+
+  .team-building-scoreboard__tile {
+    min-height: clamp(280px, 38vh, 460px);
+    padding: clamp(30px, 2.7vw, 52px);
+    border-radius: clamp(22px, 1.7vw, 32px);
+  }
+
+  .team-building-scoreboard__label {
+    font-size: clamp(1.15rem, 1.45vw, 1.7rem);
+  }
+
+  .team-building-scoreboard__value-text {
+    font-size: clamp(3.8rem, 5.8vw, 8.2rem);
+  }
+
+  @supports (font-size: 1cqi) {
+    .team-building-scoreboard__value-text {
+      font-size: clamp(2.5rem, calc(220cqi / var(--score-length, 5)), 8.2rem);
+    }
+  }
 }

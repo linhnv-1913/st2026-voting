@@ -20,6 +20,7 @@ export default function App() {
           <Route path="/results" element={<ResultsDisplay />} />
           <Route path="/final-awards" element={<FinalAwardsDisplay />} />
           <Route path="/score" element={<TeamBuildingScoreboard />} />
+          <Route path="/:accessCode" element={<UserVote />} />
         </Routes>
       </div>
     </Router>
